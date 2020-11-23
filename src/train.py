@@ -3,15 +3,16 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from conjugate_gradient import ConjugateGradient, fletcher_reeves
+from directed_gradient import DirectedGradient, rp_directions
 from model_op import add_model_weights, get_model_weights
 from multi_class_hinge_loss import multiClassHingeLoss
-from utils import get_dataloader, norm
+from optims import default_step, conj_step, directed_step
+from utils import get_dataloader
 
 
 def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
              device, epoch, loss_fn, worker_models,
-             worker_sdirs, worker_ograds):
+             worker_sdirs, worker_ograds, grad_global):
     if loss_fn == 'nll':
         loss_fn_ = F.nll_loss
     elif loss_fn == 'hinge':
@@ -24,6 +25,8 @@ def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
     worker_num_samples = {}
     worker_optims = {}
     worker_losses = {}
+    worker_grads = {}
+    worker_grad_norms = []
 
     # send data, model to workers
     # setup optimizer for each worker
@@ -34,6 +37,11 @@ def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
         worker_targets[w] = y.send(nodes[w])
         worker_num_samples[w] = x.shape[0]
 
+    if args.paradigm == 'orth' and len(grad_global) > 0:
+        worker_sdirs = {w: sdir for w, sdir in
+                        zip(workers, rp_directions(
+                            grad_global, len(workers), device))}
+
     for w in workers:
         worker_models[w] = model.copy().send(nodes[w])
         node_model = worker_models[w].get()
@@ -43,8 +51,8 @@ def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
         elif args.paradigm == 'adam':
             worker_optims[w] = optim.Adam(
                 params=worker_models[w].parameters(), lr=args.lr)
-        elif args.paradigm == 'conj':
-            worker_optims[w] = ConjugateGradient(
+        elif args.paradigm in ['conj', 'orth']:
+            worker_optims[w] = DirectedGradient(
                 params=worker_models[w].parameters(), lr=args.lr)
 
         data = worker_data[w].get()
@@ -52,61 +60,28 @@ def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
         dataloader = get_dataloader(data, target, args.batch_size)
 
         for data, target in dataloader:
-            lambda_i = 1e-3
-            lambda_i_hat = 0
-
             data, target = data.to(device), target.to(device)
             worker_optims[w].zero_grad()
             output = node_model(data)
             loss = loss_fn_(output, target)
             loss.backward()
             if args.paradigm == 'conj':
-                if len(worker_ograds) == 0:
-                    for p in node_model.parameters():
-                        worker_sdirs.append(p.grad.clone())
-                        worker_ograds.append(p.grad.clone())
-                else:
-                    grad_accum = []
-                    sdir_accum = []
-                    for p, ograd, sdir in zip(
-                            node_model.parameters(),
-                            worker_ograds, worker_sdirs):
-                        grad_accum.append(p.grad.clone())
-                        beta = fletcher_reeves(p.grad, ograd)
-                        p.grad = p.grad - beta * sdir
-                        sdir_accum.append(p.grad.clone())
-                    worker_ograds = grad_accum
-                    worker_sdirs = sdir_accum
-
-                sigma_i = args.sigma/norm(p.grad)
-
-                curr_grad = p.grad.clone()
-                p.grad = sigma_i * p.grad
-                worker_optims[w].step()
-                worker_optims[w].zero_grad()
-                output = node_model(data)
-                loss = loss_fn_(output, target)
-                loss.backward()
-                proj_grad = p.grad.clone()
-                p.grad = -p.grad / sigma_i
-                worker_optims[w].step()
-                p.grad = curr_grad
-                s_i = (proj_grad - curr_grad)/sigma_i
-
-                curr_norm = norm(curr_grad)
-                delta_i = torch.dot(curr_grad.flatten(), s_i)
-                delta_i += (lambda_i - lambda_i_hat) * curr_norm.pow(2)
-                if delta_i <= 0:
-                    lambda_i_hat = 2*(lambda_i - delta_i / curr_norm.pow(2))
-                    delta_i = - delta_i - lambda_i * curr_norm.pow(2)
-                    lambda_i = lambda_i_hat
-
-                mu_i =
-
+                grad_norm, grads = conj_step(node_model,
+                                             worker_ograds, worker_sdirs,
+                                             worker_optims[w], args.lr,
+                                             args.conj_dev)
+            elif args.paradigm == 'orth' and len(grad_global) > 0:
+                (grad_norm, orth_grads), grads = directed_step(
+                    node_model,
+                    worker_sdirs[w],
+                    worker_optims[w], args.lr)
             else:
-                worker_optims[w].step()
+                grad_norm, grads = default_step(
+                    node_model, worker_optims[w])
         worker_models[w] = node_model.send(nodes[w])
         worker_losses[w] = loss.item()
+        worker_grads[w] = grads
+        worker_grad_norms.append(grad_norm.item())
 
     agg = 'L1_W0'
     worker_models[agg] = model.copy().send(nodes[agg])
@@ -124,13 +99,26 @@ def fl_train(args, model, fl_graph, nodes, X_trains, y_trains,
             model_sum = add_model_weights(model_sum, m)
         worker_models[agg].load_state_dict(model_sum)
 
+        weighted_grads = [[grad * (worker_num_samples[_]/args.num_train)
+                           for grad in worker_grads[_]]
+                          for _ in children]
+        grad_global = weighted_grads[0]
+        for grads in weighted_grads[1:]:
+            for idx, grad in enumerate(grads):
+                grad_global[idx] += grad
+
     master = get_model_weights(worker_models[agg].get())
     model.load_state_dict(master)
 
+    worker_grad_norms = np.array(worker_grad_norms)
     if epoch % args.log_interval == 0:
         loss = np.array([_ for dump, _ in worker_losses.items()])
-        print('Train Epoch: {} \tLoss: {:.6f} +- {:.6f}'.format(
-            epoch, loss.mean(), loss.std()))
+        print('Train Epoch w\\ {}: {} \tLoss: {:.6f} +- {:.6f}'
+              ' \t Grad: {:.2f} +- {:2f}'.format(
+                  args.paradigm, epoch, loss.mean(), loss.std(),
+                  worker_grad_norms.mean(), worker_grad_norms.std()))
+
+    return worker_grad_norms, grad_global
 
 
 def fl_test(args, nodes, X_tests, y_tests,

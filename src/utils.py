@@ -27,19 +27,44 @@ def get_dataloader(data, targets, batchsize, shuffle=False):
                       shuffle=shuffle, num_workers=1)
 
 
-def get_testloader(dataset, batch_size, shuffle=True):
+class AddGaussianNoise():
+    def __init__(self, mean=0., std=1.):
+        self.std = std
+        self.mean = mean
+
+    def __call__(self, tensor):
+        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+
+
+def get_testloader(dataset, batch_size, shuffle=True, noise=False):
     kwargs = {}
     if dataset == 'mnist':
-        return torch.utils.data.DataLoader(
-            datasets.MNIST(cfg.data_dir, train=False,
-                           transform=transforms.Compose([
-                               transforms.ToTensor(),
-                               transforms.Normalize((0.1307,), (0.3081,))
-                           ])),
-            batch_size=batch_size, shuffle=shuffle, **kwargs)
+        if noise:
+            return torch.utils.data.DataLoader(
+                datasets.MNIST(cfg.data_dir, train=False,
+                               download=cfg.download,
+                               transform=transforms.Compose([
+                                   transforms.ToTensor(),
+                                   transforms.Normalize((0.1307,), (0.3081,)),
+                                   AddGaussianNoise(0, 1.0)
+                               ])),
+                batch_size=batch_size, shuffle=shuffle, **kwargs)
+        else:
+            return torch.utils.data.DataLoader(
+                datasets.MNIST(cfg.data_dir, train=False,
+                               download=cfg.download,
+                               transform=transforms.Compose([
+                                   transforms.ToTensor(),
+                                   transforms.Normalize((0.1307,), (0.3081,)),
+                               ])),
+                batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'cifar':
         return torch.utils.data.DataLoader(
             datasets.CIFAR10(cfg.data_dir, train=False,
+                             download=cfg.download,
                              transform=transforms.Compose([
                                  transforms.ToTensor(),
                                  transforms.Normalize((0.5, 0.5, 0.5),
@@ -48,6 +73,7 @@ def get_testloader(dataset, batch_size, shuffle=True):
     elif dataset == 'fmnist':
         return torch.utils.data.DataLoader(
             datasets.FashionMNIST(cfg.data_dir, train=False,
+                                  download=cfg.download,
                                   transform=transforms.Compose([
                                       transforms.ToTensor(),
                                       transforms.Normalize((0.2861,),
@@ -60,6 +86,7 @@ def get_trainloader(dataset, batch_size, shuffle=True):
     if dataset == 'mnist':
         return torch.utils.data.DataLoader(
             datasets.MNIST(cfg.data_dir, train=True,
+                           download=cfg.download,
                            transform=transforms.Compose([
                                transforms.ToTensor(),
                                transforms.Normalize((0.1307,), (0.3081,))
@@ -68,6 +95,7 @@ def get_trainloader(dataset, batch_size, shuffle=True):
     elif dataset == 'cifar':
         return torch.utils.data.DataLoader(
             datasets.CIFAR10(cfg.data_dir, train=True,
+                             download=cfg.download,
                              transform=transforms.Compose([
                                  transforms.ToTensor(),
                                  transforms.Normalize((0.5, 0.5, 0.5),
@@ -76,6 +104,7 @@ def get_trainloader(dataset, batch_size, shuffle=True):
     elif dataset == 'fmnist':
         return torch.utils.data.DataLoader(
             datasets.FashionMNIST(cfg.data_dir, train=True,
+                                  download=cfg.download,
                                   transform=transforms.Compose([
                                       transforms.ToTensor(),
                                       transforms.Normalize((0.2861,),
@@ -94,3 +123,16 @@ def nCr(n, r):
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
+
+
+def vec_angle(firsts, currents):
+    angles = []
+    for a, b in zip(firsts, currents):
+        dot = torch.dot(a.flatten(), b.flatten())
+        a_norm = torch.norm(a)
+        b_norm = torch.norm(b)
+        cos = dot/(2*a_norm*b_norm)
+        angles.append(torch.acos(cos).item() * 180/3.14)
+    angles = np.array(angles)
+
+    return angles.mean(), angles.std()

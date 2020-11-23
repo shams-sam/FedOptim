@@ -26,11 +26,12 @@ class Arguments():
         self.test_batch_size = args.test_batch_size
         if not self.test_batch_size:
             self.test_batch_size = self.num_test
+        self.noise = args.noise
         self.epochs = args.epochs
         self.lr = args.lr
         self.nesterov = args.nesterov
         self.decay = args.decay
-        self.sigma = args.sigma
+        self.conj_dev = args.conj_dev
         self.no_cuda = args.no_cuda
         self.device_id = args.device_id
         self.seed = args.seed

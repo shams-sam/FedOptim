@@ -19,11 +19,3 @@ class ConjugateGradient(optim.Optimizer):
                 p.add_(d_p, alpha=-1*closure)
 
         return loss
-
-
-def fletcher_reeves(grad, ograd):
-    grad_grad = torch.sum(grad * grad)
-    ograd_ograd = torch.sum(ograd * ograd)
-    beta = grad_grad/ograd_ograd
-
-    return beta

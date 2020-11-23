@@ -12,7 +12,7 @@ from fcn import FCN
 from distributor import get_fl_graph
 from train import fl_test, fl_train, test
 from svm import SVM
-from utils import get_testloader
+from utils import get_testloader, vec_angle
 
 
 # Setups
@@ -27,9 +27,13 @@ kwargs = {}
 
 ckpt_path = '../ckpts'
 folder = '{}_{}'.format(args.dataset, args.num_workers)
-model_name = 'clf_{}_paradigm_{}_uniform_{}_non_iid_{}' \
+model_name = 'clf_{}_noise_{}_paradigm_{}_uniform_{}_non_iid_{}' \
     '_num_workers_{}_lr_{}_decay_{}_batch_{}'.format(
-        args.clf, args.paradigm, args.uniform_data, args.non_iid,
+        args.clf, args.noise,
+        '{}_{}'.format(args.paradigm, args.conj_dev)
+        if args.paradigm == 'conj'
+        else args.paradigm,
+        args.uniform_data, args.non_iid,
         args.num_workers, args.lr, args.decay, args.batch_size)
 
 file_ = '{}/{}/logs/{}.log'.format(ckpt_path, folder, model_name)
@@ -63,7 +67,8 @@ print('Loading data: {}'.format(data_file))
 X_trains, X_tests, y_trains, y_tests, meta = pkl.load(
     open(data_file, 'rb'))
 
-test_loader = get_testloader(args.dataset, args.test_batch_size)
+test_loader = get_testloader(
+    args.dataset, args.test_batch_size, noise=args.noise)
 
 print(fl_graph)
 print('+'*80)
@@ -101,6 +106,8 @@ l_mean = []
 l_std = []
 y_mean = []
 y_std = []
+grad_mean = []
+grad_std = []
 
 print('Pre-Training')
 test(args, model, device, test_loader, best, 1, loss_type)
@@ -108,12 +115,20 @@ test(args, model, device, test_loader, best, 1, loss_type)
 worker_models = {}
 worker_sdirs = []
 worker_ograds = []
+grad_global = []
+grad_angle_mean = []
+grad_angle_std = []
+grad_init = []
 
 for epoch in range(1, args.epochs + 1):
-    fl_train(
+    grad_norms, grad_global = fl_train(
         args, model, fl_graph, workers,
         X_trains, y_trains, device, epoch,
-        loss_type, worker_models, worker_sdirs, worker_ograds)
+        loss_type, worker_models,
+        worker_sdirs, worker_ograds, grad_global)
+    if epoch == 1:
+        grad_init = grad_global
+    angle_mean, angle_std = vec_angle(grad_init, grad_global)
     acc, loss = test(args, model, device, test_loader, best, epoch, loss_type)
     loss_mean, loss_std, acc_mean, acc_std = fl_test(
         args, workers, X_tests, y_tests,
@@ -125,6 +140,10 @@ for epoch in range(1, args.epochs + 1):
     l_std.append(loss_std)
     y_mean.append(acc_mean)
     y_std.append(acc_std)
+    grad_mean.append(grad_norms.mean())
+    grad_std.append(grad_norms.std())
+    grad_angle_mean.append(angle_mean)
+    grad_angle_std.append(angle_std)
 
     if args.save_model and acc > best:
         best = acc
@@ -143,30 +162,47 @@ l_mean = np.array(l_mean)
 l_std = np.array(l_std)
 y_mean = np.array(y_mean)
 y_std = np.array(y_std)
+grad_mean = np.array(grad_mean)
+grad_std = np.array(grad_std)
+grad_angle_mean = np.array(grad_angle_mean)
+grad_angle_std = np.array(grad_angle_std)
 
-fig = plt.figure(figsize=(5, 4))
-ax1 = fig.add_subplot(111)
+fig = plt.figure(figsize=(10, 4))
+ax1 = fig.add_subplot(121)
 ax2 = plt.twinx()
 l1 = ax1.plot(x_ax, y_ax, 'b', label='accuracy')
 l1_ = ax1.plot(x_ax, y_mean, 'b.-.', label='acc mean')
 ax1.fill_between(x_ax, y_mean-y_std, y_mean+y_std, alpha=0.3, facecolor='b')
-# ax1.plot(x_ax, y_mean+y_std, 'b:')
-# ax1.plot(x_ax, y_mean-y_std, 'b:')
 ax1.set_ylabel('accuracy')
+
 l2 = ax2.plot(x_ax, l_test, 'r', label='{} loss'.format(loss_type))
 l2_ = ax2.plot(x_ax, l_mean, 'r.-.', label='{} mean'.format(loss_type))
 ax2.fill_between(x_ax, l_mean-l_std, l_mean+l_std, alpha=0.3, facecolor='r')
-# ax2.plot(x_ax, l_mean+l_std, 'r:')
-# ax2.plot(x_ax, l_mean-l_std, 'r:')
 ax2.set_ylabel('{} loss'.format(loss_type))
 ax2.set_xlabel('epochs')
-ls = l1+l1_+l2+l2_
+
+ax3 = fig.add_subplot(122)
+ax4 = plt.twinx()
+l3 = ax3.plot(x_ax, grad_mean, 'g', label='gradient')
+ax3.fill_between(x_ax, grad_mean-grad_std, grad_mean +
+                 grad_std, alpha=0.3, facecolor='g')
+ax3.set_ylabel('gradient norm'.format(loss_type))
+ax3.set_xlabel('epochs')
+
+l4 = ax4.plot(x_ax, grad_angle_mean, 'm', label='angle')
+ax4.fill_between(x_ax, grad_angle_mean-grad_angle_std, grad_angle_mean+grad_angle_std,
+                 alpha=0.3, facecolor='m')
+ax4.set_ylabel('gradient angle'.format(loss_type))
+
+ls = l1+l1_+l2+l2_+l3+l4
 lab = [_.get_label() for _ in ls]
-ax1.legend(ls, lab, loc=7)
+ax3.legend(ls, lab, loc=7)
 ax1.grid()
+ax3.grid()
 plt.xlim(left=0, right=args.epochs)
+fig.subplots_adjust(wspace=0.5)
 plot_file = '{}/{}/plots/{}.jpg'.format(ckpt_path, folder, model_name)
-plt.savefig(plot_file, bbox_inches='tight', dpi=300)
+plt.savefig(plot_file, bbox_inches='tight', dpi=100)
 print('Saved: ', plot_file)
 if args.dry_run:
     print("Remove: ", plot_file)

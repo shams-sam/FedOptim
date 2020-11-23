@@ -12,12 +12,13 @@ def argparser():
     parser.add_argument('--batch-size', type=int, required=False, default=0)
     parser.add_argument('--test-batch-size', type=int,
                         required=False, default=0)
+    parser.add_argument('--noise', type=booltype, required=False)
     parser.add_argument('--epochs', type=int, required=True)
     parser.add_argument('--lr', type=float, required=True)
     parser.add_argument('--nesterov', type=booltype,
                         required=False, default=False)
     parser.add_argument('--decay', type=float, required=False, default=1e-5)
-    parser.add_argument('--sigma', type=float, required=False, default=1e-6)
+    parser.add_argument('--conj-dev', type=str, required=False)
     parser.add_argument('--no-cuda', type=booltype,
                         required=False, default=False)
     parser.add_argument('--device-id', type=int,

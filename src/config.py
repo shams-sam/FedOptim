@@ -1,4 +1,5 @@
 data_dir = '../../data'
+download = True
 
 num_trains = {
     'mnist': 60000,
