@@ -10,6 +10,7 @@ class Arguments():
         self.dataset = args.dataset
         self.clf = args.clf
         self.paradigm = args.paradigm
+        self.num_comp = args.num_comp
         self.num_train = cfg.num_trains[self.dataset]*args.repeat
         self.num_test = cfg.num_tests[self.dataset]
         self.input_size = cfg.input_sizes[self.dataset]
@@ -32,6 +33,8 @@ class Arguments():
         self.nesterov = args.nesterov
         self.decay = args.decay
         self.conj_dev = args.conj_dev
+        self.kgrads = args.kgrads
+        self.update_kgrads = args.update_kgrads
         self.no_cuda = args.no_cuda
         self.device_id = args.device_id
         self.seed = args.seed
@@ -39,7 +42,7 @@ class Arguments():
         # logging config
         self.log_interval = args.log_interval
         self.save_model = args.save_model
-
+        self.early_stopping = args.early_stopping
         # dry run
         self.dry_run = args.dry_run
         if self.dry_run:

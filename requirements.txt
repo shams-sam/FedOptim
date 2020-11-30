@@ -1,0 +1,17 @@
+beautifulsoup4
+gensim
+nltk
+networkx
+notebook
+plotly
+psycopg2-binary
+PyMySql
+seaborn
+sqlalchemy
+syft==0.2.9
+terminaltables
+torchsummary
+tqdm
+wordcloud
+xgboost
+xlrd

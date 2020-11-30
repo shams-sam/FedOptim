@@ -147,51 +147,80 @@
 
 ## noisy
 # iid on 1
-python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 1 --histories \
-       clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
-       --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
-       --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.jpg
+# python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 1 --histories \
+#        clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.pkl \
+#        --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
+#        --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_1_lr_0.01_decay_1e-05_batch_0.jpg
 
-# iid on 10
-python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 10 --histories \
-       clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
-       --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.jpg
+# # iid on 10
+# python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 10 --histories \
+#        clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
+#        --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_10_lr_0.01_decay_1e-05_batch_0.jpg
 
-# iid on 100
+# # iid on 100
+# python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 100 --histories \
+#        clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3 \
+#        --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+
+# # non-iid on 10
+# python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 10 --histories \
+#        clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
+#        --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
+#        --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.jpg
+
+# # non-iid on 100
+# python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 100 --histories \
+#        clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+#        --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3 \
+#        --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+
+# kgrads iid on 100 mnist
 python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 100 --histories \
-       clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3 \
-       --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+       clf_fcn_noise_None_paradigm_sgd_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_orth_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_kgrad_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       --labels 'sgd' 'orth', 'kgrad' --ncols 3 \
+       --name comparison_clf_fcn_paradigm_kgrad_varying_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
 
-# non-iid on 10
-python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 10 --histories \
-       clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.pkl \
-       --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3\
-       --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_1_num_workers_10_lr_0.01_decay_1e-05_batch_0.jpg
-
-# non-iid on 100
 python comparison.py --dpi 100 --infer-folder 1 --dataset mnist --num-nodes 100 --histories \
-       clf_fcn_noise_True_paradigm_sgd_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_adam_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_pr_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_conj_fr_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       clf_fcn_noise_True_paradigm_orth_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
-       --labels 'sgd' 'adam' 'conj w/ pr' 'conj w/ fr' 'orth' --ncols 3 \
-       --name comparison_clf_fcn_noise_True_paradigm_varying_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+       clf_fcn_noise_None_paradigm_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_orth_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_kgrad_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       --labels 'sgd' 'orth', 'kgrad' --ncols 3 \
+       --name comparison_clf_fcn_paradigm_kgrad_varying_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+
+python comparison.py --dpi 100 --infer-folder 1 --dataset fmnist --num-nodes 100 --histories \
+       clf_fcn_noise_None_paradigm_sgd_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_orth_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_kgrad_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       --labels 'sgd' 'orth', 'kgrad' --ncols 3 \
+       --name comparison_clf_fcn_paradigm_kgrad_varying_uniform_True_non_iid_1_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg
+
+python comparison.py --dpi 100 --infer-folder 1 --dataset fmnist --num-nodes 100 --histories \
+       clf_fcn_noise_None_paradigm_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_orth_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       clf_fcn_noise_None_paradigm_kgrad_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+       --labels 'sgd' 'orth', 'kgrad' --ncols 3 \
+       --name comparison_clf_fcn_paradigm_kgrad_varying_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.jpg

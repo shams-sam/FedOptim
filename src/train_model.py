@@ -1,8 +1,13 @@
-import matplotlib.pyplot as plt
-import numpy as np
+"""
+Training starts here
+"""
+
 import os
 import pickle as pkl
 import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
 import syft as sy
 import torch
 
@@ -27,12 +32,13 @@ kwargs = {}
 
 ckpt_path = '../ckpts'
 folder = '{}_{}'.format(args.dataset, args.num_workers)
+
 model_name = 'clf_{}_noise_{}_paradigm_{}_uniform_{}_non_iid_{}' \
     '_num_workers_{}_lr_{}_decay_{}_batch_{}'.format(
         args.clf, args.noise,
         '{}_{}'.format(args.paradigm, args.conj_dev)
         if args.paradigm == 'conj'
-        else args.paradigm,
+        else args.paradigm + ('dyn' if args.update_kgrads else ''),
         args.uniform_data, args.non_iid,
         args.num_workers, args.lr, args.decay, args.batch_size)
 

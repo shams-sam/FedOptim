@@ -216,5 +216,32 @@ python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm conj -
 python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm orth --num-workers 100 --epochs 101 --lr 0.1 --non-iid 1 --repeat 1 --dry-run 0 &
 }
 
+iid_mnist_kgrads() {
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm kgrad --update-kgrads 1 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm kgrad --update-kgrads 0 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm orth --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm sgd --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+}
+
+non_iid_mnist_kgrads() {
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm kgrad --update-kgrads 1 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm kgrad --update-kgrads 0 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm orth --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset mnist --clf fcn --paradigm sgd --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+}
+
+iid_fmnist_kgrads() {
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm kgrad --update-kgrads 1 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm kgrad --update-kgrads 0 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm orth --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm sgd --num-workers 100 --epochs 101 --lr 0.01 --non-iid 10 --repeat 1 --dry-run 0 &
+}
+
+non_iid_fmnist_kgrads() {
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm kgrad --update-kgrads 1 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm kgrad --update-kgrads 0 --kgrads 10 --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm orth --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+    python train_model.py --device-id 2 --dataset fmnist --clf fcn --paradigm sgd --num-workers 100 --epochs 101 --lr 0.01 --non-iid 1 --repeat 1 --dry-run 0 &
+}
 
 $1
