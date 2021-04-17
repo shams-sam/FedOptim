@@ -4,7 +4,7 @@ import numpy as np
 import pickle as pkl
 
 import argparse
-from utils import Struct
+from common.utils import Struct
 
 
 # matplotlib.rcParams.update({'font.size': 37})
@@ -20,6 +20,7 @@ ap.add_argument('--name', type=str, required=True)
 ap.add_argument('--ncols', type=int, required=True)
 ap.add_argument('--dpi', type=int, required=True)
 ap.add_argument('--colors', type=str, nargs='+', required=False, default=[])
+ap.add_argument('--epochs', type=int, required=False)
 ap.add_argument('--infer-folder', type=int, required=True)
 args = vars(ap.parse_args())
 args = Struct(**args)
@@ -36,15 +37,19 @@ for idx, history in enumerate(args.histories):
     if args.infer_folder == 1:
         history = '../ckpts/{}_{}/history/{}'.format(
             args.dataset, args.num_nodes, history)
-    x_ax, y_ax, l_test = pkl.load(
+    h_epoch, h_acc, _, _, h_loss, _, _, h_uplink, _, _ = pkl.load(
         open(history, 'rb'))
-    ax1.plot(x_ax, y_ax, colors[idx], label=args.labels[idx])
-    ax2.plot(x_ax, l_test, colors[idx], label=args.labels[idx])
+    h_epoch = h_epoch[:args.epochs]
+    h_acc = h_acc[:args.epochs]
+    h_loss = h_loss[:args.epochs]
+    h_uplink = h_uplink[:args.epochs]
+    ax1.plot(h_epoch, h_acc, colors[idx], label=args.labels[idx])
+    ax2.plot(h_epoch, np.cumsum(h_uplink), colors[idx], label=args.labels[idx])
 
 ax1.set_xlabel('epochs')
 ax1.set_ylabel('accuracy')
 ax2.set_xlabel('epochs')
-ax2.set_ylabel('loss')
+ax2.set_ylabel('# uplink')
 ax1.grid(ls='-.', lw=0.25)
 ax2.grid(ls='-.', lw=0.25)
 ax2.legend(loc='upper right', ncol=args.ncols,

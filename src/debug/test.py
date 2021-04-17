@@ -1,0 +1,33 @@
+import torch
+from common.utils import calc_projection
+
+
+def gradient_approximation(orig, sdirs):
+    true_grads = []
+    idx = 0
+    for p in orig:
+        true_grads.append(p.clone().flatten())
+        p = torch.zeros(p.size())
+        idx += 1
+    for sdir in sdirs:
+        for p, s, g in zip(orig, sdir, true_grads):
+            size = p.size()
+            grad_flat = p.clone().flatten()
+            true_grad = g.clone()
+            grad_flat = grad_flat + \
+                calc_projection(true_grad, s.flatten()) * \
+                s.flatten()
+            p.copy_(grad_flat.reshape(size).clone())
+    print(p)
+
+
+orig = [torch.ones((10,)), torch.zeros((5,))]
+s1 = [torch.zeros((10,)) for _ in range(10)]
+for idx, s in enumerate(s1):
+    s[idx] = 1
+print(s1)
+s2 = [torch.ones((5,)) for _ in range(10)]
+for idx, s in enumerate(s2):
+    s[idx] = 0
+print(s2)
+sdirs = [[], []]

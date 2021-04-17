@@ -1,221 +1,186 @@
-"""
-Training starts here
-"""
-
+import functools
 import os
 import pickle as pkl
+import shutil
 import sys
 
-import matplotlib.pyplot as plt
-import numpy as np
 import syft as sy
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
-from argparser import argparser
-from arguments import Arguments
-from fcn import FCN
-from distributor import get_fl_graph
-from train import fl_test, fl_train, test
-from svm import SVM
-from utils import get_testloader, vec_angle
+from common.approximation import get_sdirs
+from common.argparser import argparser
+from common.arguments import Arguments
+from common.utils import get_device, get_paths, init_logger, \
+    tb_model_summary
+from data.distributor import get_fl_graph
+from data.loader import get_loader
+from models.train import fl_train, test
+from models.utils import get_model
+from viz.training_plots import training_plots
 
+print = functools.partial(print, flush=True)
+torch.set_printoptions(linewidth=120)
 
+# ------------------------------------------------------------------------------
 # Setups
+# ------------------------------------------------------------------------------
+
 args = Arguments(argparser())
 hook = sy.TorchHook(torch)
-USE_CUDA = not args.no_cuda and torch.cuda.is_available()
+device = get_device(args)
+paths = get_paths(args)
+log_file, std_out = init_logger(paths.log_file, args.dry_run)
+if os.path.exists(paths.tb_path):
+    shutil.rmtree(paths.tb_path)
+tb = SummaryWriter(paths.tb_path)
 
-torch.manual_seed(args.seed)
-device = torch.device("cuda:{}".format(args.device_id) if USE_CUDA else "cpu")
-kwargs = {'num_workers': 1, 'pin_memory': True} if USE_CUDA else {}
-kwargs = {}
 
-ckpt_path = '../ckpts'
-folder = '{}_{}'.format(args.dataset, args.num_workers)
-
-model_name = 'clf_{}_noise_{}_paradigm_{}_uniform_{}_non_iid_{}' \
-    '_num_workers_{}_lr_{}_decay_{}_batch_{}'.format(
-        args.clf, args.noise,
-        '{}_{}'.format(args.paradigm, args.conj_dev)
-        if args.paradigm == 'conj'
-        else args.paradigm + ('dyn' if args.update_kgrads else ''),
-        args.uniform_data, args.non_iid,
-        args.num_workers, args.lr, args.decay, args.batch_size)
-
-file_ = '{}/{}/logs/{}.log'.format(ckpt_path, folder, model_name)
-print("Logging: ", file_)
-if not args.dry_run:
-    log_file = open(file_, 'w')
-    std_out = sys.stdout
-    sys.stdout = log_file
-
-print('+'*80)
-print(model_name)
-print('+'*80)
+print('+' * 80)
+print(paths.model_name)
+print('+' * 80)
 
 print(args.__dict__)
-print('+'*80)
-
-init_path = '{}/{}/{}_{}.init'.format(ckpt_path, 'init',
-                                      args.dataset, args.clf)
-best_path = os.path.join(ckpt_path, folder, 'models',  model_name + '.best')
-stop_path = os.path.join(ckpt_path, folder, 'models',  model_name + '.stop')
+print('+' * 80)
 
 # prepare graph and data
-fl_graph, workers = get_fl_graph(hook, args.num_workers)
+_, workers = get_fl_graph(hook, args.num_workers)
+print('Loading data: {}'.format(paths.data_path))
+X_trains, _, y_trains, _, meta = pkl.load(open(paths.data_path, 'rb'))
 
-data_file = '../ckpts/{}_{}/data/n_classes_per_node_{}_stratify_{}' \
-            '_uniform_{}_repeat_{}.pkl'.format(
-                args.dataset, args.num_workers, args.non_iid,
-                args.stratify, args.uniform_data, args.repeat)
+test_loader = get_loader(
+    args.dataset, args.test_batch_size, train=False, noise=args.noise)
 
-print('Loading data: {}'.format(data_file))
-X_trains, X_tests, y_trains, y_tests, meta = pkl.load(
-    open(data_file, 'rb'))
+print('+' * 80)
 
-test_loader = get_testloader(
-    args.dataset, args.test_batch_size, noise=args.noise)
 
-print(fl_graph)
-print('+'*80)
-
+# ------------------------------------------------------------------------------
 # Fire the engines
-if args.clf == 'fcn':
-    print('Initializing FCN...')
-    model_class = FCN
-elif args.clf == 'svm':
-    print('Initializing SVM...')
-    model_class = SVM
+# ------------------------------------------------------------------------------
 
-model = model_class(args.input_size, args.output_size).to(device)
-
-model.load_state_dict(torch.load(init_path))
-print('Load init: {}'.format(init_path))
-
-loss_type = 'hinge' if args.clf == 'svm' else 'nll'
-agg_type = 'averaging'
-
-print("Loss: {}\nAggregation: {}".format(loss_type, agg_type))
-
+model, loss_type = get_model(args)
 if args.batch_size == 0:
     args.batch_size = int(meta['batch_size'])
     print("Resetting batch size: {}...".format(args.batch_size))
 
-print('+'*80)
-
-best = 0
-
-x_ax = []
-y_ax = []
-l_test = []
-l_mean = []
-l_std = []
-y_mean = []
-y_std = []
-grad_mean = []
-grad_std = []
+print('+' * 80)
+h_epoch = []
+h_acc_test = []
+h_acc_train = []
+h_acc_train_std = []
+h_loss_test = []
+h_loss_train = []
+h_loss_train_std = []
+h_uplink = []
+h_grad_agg = []
+h_error = []
 
 print('Pre-Training')
-test(args, model, device, test_loader, best, 1, loss_type)
+print('Pre-Training')
+tb_model_summary(model, test_loader, tb, device)
+best, i = test(model, device, test_loader, loss_type)
+ii, iii = test(model, device, test_loader, loss_type)
+print('Acc: {:.4f}'.format(best))
+tb.add_scalar('Train_Loss', iii, 0)
+tb.add_scalar('Val_Loss', i, 0)
+tb.add_scalar('Train_Acc', ii, 0)
+tb.add_scalar('Val_Acc', best, 0)
 
 worker_models = {}
-worker_sdirs = []
-worker_ograds = []
-grad_global = []
-grad_angle_mean = []
-grad_angle_std = []
-grad_init = []
+worker_residuals = {}
+worker_sdirs = get_sdirs(args, model, paths, X_trains, y_trains)
+sdirs = {}
 
+
+wait = 0
+prev_error = 0
+print('+' * 80)
+print('Training w/ optim:{} and paradigm {}'.format(
+    args.optim, ','.join(args.paradigm) if args.paradigm else 'NA'))
+print('epoch \t tr loss (acc) (mean+-std) \t test loss (acc) '
+      '\t cumm-err. \t topk \t kgrads')
 for epoch in range(1, args.epochs + 1):
-    grad_norms, grad_global = fl_train(
-        args, model, fl_graph, workers,
-        X_trains, y_trains, device, epoch,
-        loss_type, worker_models,
-        worker_sdirs, worker_ograds, grad_global)
-    if epoch == 1:
-        grad_init = grad_global
-    angle_mean, angle_std = vec_angle(grad_init, grad_global)
-    acc, loss = test(args, model, device, test_loader, best, epoch, loss_type)
-    loss_mean, loss_std, acc_mean, acc_std = fl_test(
-        args, workers, X_tests, y_tests,
-        device, epoch, loss_type, worker_models)
-    y_ax.append(acc)
-    x_ax.append(epoch)
-    l_test.append(loss)
-    l_mean.append(loss_mean)
-    l_std.append(loss_std)
-    y_mean.append(acc_mean)
-    y_std.append(acc_std)
-    grad_mean.append(grad_norms.mean())
-    grad_std.append(grad_norms.std())
-    grad_angle_mean.append(angle_mean)
-    grad_angle_std.append(angle_std)
+    h_epoch.append(epoch)
 
-    if args.save_model and acc > best:
+    train_loss, train_loss_std, train_acc, train_acc_std, \
+        worker_grad_sum, uplink, sdirs, worker_residuals, \
+        cumm_error = fl_train(
+            args, model, workers, X_trains, y_trains, device, loss_type,
+            worker_models, worker_sdirs, sdirs, worker_residuals)
+    h_acc_train.append(train_acc)
+    h_acc_train_std.append(train_acc_std)
+    h_loss_train.append(train_loss)
+    h_loss_train_std.append(train_loss_std)
+    h_uplink.append(uplink)
+    h_grad_agg.append(worker_grad_sum)
+    h_error.append(cumm_error)
+
+    increase = 0 if (not prev_error or not cumm_error) else (
+        cumm_error-prev_error)/prev_error
+    if args.paradigm and \
+       'kgrad' in args.paradigm and prev_error != 0 and cumm_error != 0 and \
+       (increase > args.error_tol or increase <= 0.01):
+        args.kgrads += 1
+    elif args.paradigm and 'kgrad' not in args.paradigm:
+        args.kgrads = -1
+
+    prev_error = cumm_error
+
+    if not args.paradigm or (args.paradigm and 'topk' not in args.paradigm):
+        args.topk = -1
+
+    acc, loss = test(args, model, device, test_loader, loss_type)
+    h_acc_test.append(acc)
+    h_loss_test.append(loss)
+
+    if acc > best:
         best = acc
-        torch.save(model.state_dict(), best_path)
-        print('Model best  @ {}, acc {}: {}\n'.format(
-            epoch, acc, best_path))
-if (args.save_model):
-    torch.save(model.state_dict(), stop_path)
-    print('Model stop: {}'.format(stop_path))
+        if args.save_model:
+            torch.save(model.state_dict(), paths.best_path)
+            best_iter = epoch
+    else:
+        wait += 1
 
-hist_file = '{}/{}/history/{}.pkl'.format(ckpt_path, folder, model_name)
-pkl.dump((x_ax, y_ax, l_test), open(hist_file, 'wb'))
-print('Saved: ', hist_file)
+    if epoch % args.log_intv == 0:
+        print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) '
+              '\t {:.4f} ({:.2f}) \t {:.2f} \t {:.1f}'.format(
+                  epoch, train_loss, train_loss_std,
+                  train_acc, train_acc_std,
+                  loss, acc, cumm_error, increase, args.topk, args.kgrads))
 
-l_mean = np.array(l_mean)
-l_std = np.array(l_std)
-y_mean = np.array(y_mean)
-y_std = np.array(y_std)
-grad_mean = np.array(grad_mean)
-grad_std = np.array(grad_std)
-grad_angle_mean = np.array(grad_angle_mean)
-grad_angle_std = np.array(grad_angle_std)
+    if wait > args.patience:
+        if args.early_stopping:
+            print('Early stopping after wait = {}...'.format(args.patience))
+            break
 
-fig = plt.figure(figsize=(10, 4))
-ax1 = fig.add_subplot(121)
-ax2 = plt.twinx()
-l1 = ax1.plot(x_ax, y_ax, 'b', label='accuracy')
-l1_ = ax1.plot(x_ax, y_mean, 'b.-.', label='acc mean')
-ax1.fill_between(x_ax, y_mean-y_std, y_mean+y_std, alpha=0.3, facecolor='b')
-ax1.set_ylabel('accuracy')
+if args.save_model:
+    print('\nModel best  @ {}, acc {:.4f}: {}'.format(
+        best_iter, best, paths.best_path))
+    torch.save(model.module.state_dict(), paths.stop_path)
+    print('Model stop: {}'.format(paths.stop_path))
 
-l2 = ax2.plot(x_ax, l_test, 'r', label='{} loss'.format(loss_type))
-l2_ = ax2.plot(x_ax, l_mean, 'r.-.', label='{} mean'.format(loss_type))
-ax2.fill_between(x_ax, l_mean-l_std, l_mean+l_std, alpha=0.3, facecolor='r')
-ax2.set_ylabel('{} loss'.format(loss_type))
-ax2.set_xlabel('epochs')
 
-ax3 = fig.add_subplot(122)
-ax4 = plt.twinx()
-l3 = ax3.plot(x_ax, grad_mean, 'g', label='gradient')
-ax3.fill_between(x_ax, grad_mean-grad_std, grad_mean +
-                 grad_std, alpha=0.3, facecolor='g')
-ax3.set_ylabel('gradient norm'.format(loss_type))
-ax3.set_xlabel('epochs')
+pkl.dump((
+    h_epoch, h_acc_test, h_acc_train, h_acc_train_std, h_loss_test,
+    h_loss_train, h_loss_train_std, h_uplink, h_grad_agg
+), open(paths.hist_path, 'wb'))
+print('Saved: ', paths.hist_path)
 
-l4 = ax4.plot(x_ax, grad_angle_mean, 'm', label='angle')
-ax4.fill_between(x_ax, grad_angle_mean-grad_angle_std, grad_angle_mean+grad_angle_std,
-                 alpha=0.3, facecolor='m')
-ax4.set_ylabel('gradient angle'.format(loss_type))
+training_plots({
+    'h_epoch': h_epoch, 'h_acc_test': h_acc_test,
+    'h_acc_train': h_acc_train, 'h_acc_train_std': h_acc_train_std,
+    'h_loss_test': h_loss_test, 'h_loss_train': h_loss_train,
+    'h_loss_train_std': h_loss_train_std, 'h_uplink': h_uplink,
+    'h_grad': h_grad_agg, 'h_error': h_error,
+}, args, loss_type, paths.plot_path)
 
-ls = l1+l1_+l2+l2_+l3+l4
-lab = [_.get_label() for _ in ls]
-ax3.legend(ls, lab, loc=7)
-ax1.grid()
-ax3.grid()
-plt.xlim(left=0, right=args.epochs)
-fig.subplots_adjust(wspace=0.5)
-plot_file = '{}/{}/plots/{}.jpg'.format(ckpt_path, folder, model_name)
-plt.savefig(plot_file, bbox_inches='tight', dpi=100)
-print('Saved: ', plot_file)
 if args.dry_run:
-    print("Remove: ", plot_file)
-    os.remove(plot_file)
-    print("Remove: ", hist_file)
-    os.remove(hist_file)
+    print("Remove: ", paths.plot_path)
+    os.remove(paths.plot_path)
+    print("Remove: ", paths.hist_path)
+    os.remove(paths.hist_path)
 
+print("+"*38 + "EOF" + "+"*39)
 
 if not args.dry_run:
     log_file.close()
