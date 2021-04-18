@@ -1,7 +1,9 @@
 import numpy as np
 import pickle as pkl
 from sklearn.random_projection import johnson_lindenstrauss_min_dim as jl_dim
+import torch
 
+from common.nb_utils import pca_transform
 from common.utils import decor_print, get_device, get_random_vector
 from data.loader import get_dataloader
 from models.utils import forward, get_loss_fn, get_model, get_optim
@@ -25,7 +27,7 @@ def get_dga_sdirs(args, data, labels):
     sdirs = []
     for x, y in zip(data, labels):
         # dga_bs: dist grad accum. batch size
-        dataloader = get_dataloader(x, y, args.dga_bs)
+        dataloader = get_dataloader(x, y, args.dga_bs, shuffle=False)
         count = 0
         for xiter, yiter in dataloader:
             model, loss_type = get_model(args, False)
@@ -40,10 +42,22 @@ def get_dga_sdirs(args, data, labels):
             if count >= args.num_dga:
                 break
 
-    stacked = sdirs
-    assert len(stacked) == args.num_workers
+    stacked = [[] for _ in range(len(sdirs[0]))]
 
-    return stacked
+    for l in range(len(sdirs[0])):
+        for i in range(len(sdirs)):
+            stacked[l].append(sdirs[i][l].flatten())
+
+    sdirs = [[] for _ in range(args.ncomponent)]
+    for l, layer in enumerate(stacked):
+        layer = torch.stack(layer, dim=0).T.cpu().numpy()
+        layer, _ = pca_transform(layer, args.ncomponent)
+        for i in range(args.ncomponent):
+            sdirs[i].append(layer[:, i].flatten())
+
+    assert len(sdirs) == args.ncomponent
+
+    return sdirs
 
 
 def get_jl_dim(samples, eps):
@@ -52,6 +66,7 @@ def get_jl_dim(samples, eps):
 
 def load_sdirs(path):
     sdirs = pkl.load(open(path, 'rb'))
+    sdirs = [[torch.Tensor(l) for l in sdir] for sdir in sdirs]
     decor_print('ncomponents: {}'.format(len(sdirs)))
 
     return sdirs
@@ -87,7 +102,6 @@ def get_rp_block(args, model):
         get_random_vector(1.0, np.sqrt(num_sdirs), (num_sdirs, s[0]))
         for s in layer_sizes
     ]
-
 
 
 def get_sdirs(args, model, paths, X, y):

@@ -76,7 +76,6 @@ h_grad_agg = []
 h_error = []
 
 print('Pre-Training')
-print('Pre-Training')
 tb_model_summary(model, test_loader, tb, device)
 best, i = test(model, device, test_loader, loss_type)
 ii, iii = test(model, device, test_loader, loss_type)
@@ -91,6 +90,10 @@ worker_residuals = {}
 worker_sdirs = get_sdirs(args, model, paths, X_trains, y_trains)
 sdirs = {}
 
+
+# ------------------------------------------------------------------------------
+# Training
+# ------------------------------------------------------------------------------
 
 wait = 0
 prev_error = 0
@@ -129,9 +132,14 @@ for epoch in range(1, args.epochs + 1):
     if not args.paradigm or (args.paradigm and 'topk' not in args.paradigm):
         args.topk = -1
 
-    acc, loss = test(args, model, device, test_loader, loss_type)
+    acc, loss = test(model, device, test_loader, loss_type)
     h_acc_test.append(acc)
     h_loss_test.append(loss)
+
+    tb.add_scalar('Train_Loss', h_loss_train[-1], epoch)
+    tb.add_scalar('Val_Loss', h_loss_test[-1], epoch)
+    tb.add_scalar('Train_Acc', h_acc_train[-1], epoch)
+    tb.add_scalar('Val_Acc', h_acc_test[-1], epoch)
 
     if acc > best:
         best = acc
@@ -147,12 +155,19 @@ for epoch in range(1, args.epochs + 1):
                   epoch, train_loss, train_loss_std,
                   train_acc, train_acc_std,
                   loss, acc, cumm_error, increase, args.topk, args.kgrads))
+        tb.flush()
 
     if wait > args.patience:
         if args.early_stopping:
             print('Early stopping after wait = {}...'.format(args.patience))
             break
 
+
+# ------------------------------------------------------------------------------
+# Saving
+# ------------------------------------------------------------------------------
+
+tb.close()
 if args.save_model:
     print('\nModel best  @ {}, acc {:.4f}: {}'.format(
         best_iter, best, paths.best_path))
@@ -180,7 +195,11 @@ if args.dry_run:
     print("Remove: ", paths.hist_path)
     os.remove(paths.hist_path)
 
-print("+"*38 + "EOF" + "+"*39)
+print("+" * 38 + "EOF" + "+" * 39)
+
+# ------------------------------------------------------------------------------
+# Reset print
+# ------------------------------------------------------------------------------
 
 if not args.dry_run:
     log_file.close()

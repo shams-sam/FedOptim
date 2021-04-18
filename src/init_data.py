@@ -1,8 +1,8 @@
 import argparse
 import common.config as cfg
-from common.utils import booltype, \
-    get_testloader, get_trainloader, Struct
+from common.utils import booltype, Struct
 from data.distributor import get_distributed_data
+from data.loader import get_loader
 import numpy as np
 import pickle as pkl
 import torch
@@ -27,8 +27,8 @@ num_classes = cfg.output_sizes[args.dataset]
 
 kwargs = {}
 
-train_loader = get_trainloader(args.dataset, num_train)
-test_loader = get_testloader(args.dataset, num_test)
+train_loader = get_loader(args.dataset, num_train, train=True)
+test_loader = get_loader(args.dataset, num_test, train=False)
 
 for data, target in train_loader:
     X_train = data

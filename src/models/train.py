@@ -1,14 +1,11 @@
 import numpy as np
-import torch
 
-import common.config as cfg
 from common.utils import add_gaussian_noise, is_approx
 from data.distributor import get_cluster_sizes
 from data.loader import get_dataloader
 from models.model_op import get_model_grads, add_param_list, get_model_size,\
-    gradient_approximation, model_update, norm, topk_sparsify
+    gradient_approximation, model_update, topk_sparsify
 from models.utils import forward, get_loss_fn, get_optim
-import torchvision
 
 
 def sdirs_prepare(args, sdirs, worker_sdirs, workers, full=False):
@@ -34,7 +31,7 @@ def sdirs_prepare(args, sdirs, worker_sdirs, workers, full=False):
         if rem > 0:
             sdirsi = sdirsi + worker_sdirs[:rem]
         for sdir, w in zip(sdirsi, workers):
-            sdirs[w] = [sdir]  # *args.ncomponent
+            sdirs[w] = [sdir]
 
 
 def sdirs_approximation(args, node_model, sdirs, worker_residuals, device):

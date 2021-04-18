@@ -181,6 +181,7 @@ if args.dry_run:
     print("Remove: ", paths.hist_path)
     os.remove(paths.hist_path)
 
+print("+" * 38 + "EOF" + "+" * 39)
 
 # ------------------------------------------------------------------------------
 # Reset print

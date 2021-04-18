@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from common.utils import is_sdir, vec_unit_dot
+from common.utils import is_approx, vec_unit_dot
 
 
 def training_plots(h, args, loss_type, plot_path):
@@ -52,7 +52,7 @@ def training_plots(h, args, loss_type, plot_path):
     ax1.set_title('(a)', y=-0.3)
 
     ax2 = fig.add_subplot(222)
-    if is_sdir(args) or (args.paradigm and 'topk' in args.paradigm):
+    if is_approx(args) or (args.paradigm and 'topk' in args.paradigm):
         ax2.plot(h_epoch, h_error, 'r')
         ax2.set_ylabel('error in projection')
     # else:
