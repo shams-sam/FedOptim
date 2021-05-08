@@ -10,6 +10,7 @@ class Arguments():
         self.dataset = args.dataset
         self.clf = args.clf
         self.optim = args.optim
+        self.scheduler = args.scheduler
         self.paradigm = args.paradigm
         self.ncomponent = args.ncomponent
         self.rp_eps = args.rp_eps
@@ -27,6 +28,7 @@ class Arguments():
         self.input_size = cfg.input_sizes[self.dataset]
         self.output_size = cfg.output_sizes[self.dataset]
         self.num_channels = cfg.num_channels[self.dataset]
+        self.cnn_view = cfg.cnn_view[self.dataset]
         self.stratify = args.stratify
         self.num_workers = args.num_workers
         self.uniform_data = args.uniform_data
@@ -41,8 +43,10 @@ class Arguments():
             self.test_batch_size = self.num_test
         self.noise = args.noise
         self.epochs = args.epochs
+        self.loss_type = args.loss_type
         self.lr = args.lr
         self.nesterov = args.nesterov
+        self.momentum = args.momentum
         self.decay = args.decay
         self.no_cuda = args.no_cuda
         self.device_id = args.device_id

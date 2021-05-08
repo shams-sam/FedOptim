@@ -251,11 +251,11 @@ def resnext101_32x8d(**kwargs):
 def get_resnet(num_layers):
     if num_layers == 18:
         return resnet18
-    elif num_layers == 34:
+    if num_layers == 34:
         return resnet34
-    elif num_layers == 50:
+    if num_layers == 50:
         return resnet50
-    elif num_layers == 101:
+    if num_layers == 101:
         return resnet101
-    elif num_layers == 152:
+    if num_layers == 152:
         return resnet152

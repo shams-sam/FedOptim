@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class FCN(nn.Module):
@@ -10,8 +9,7 @@ class FCN(nn.Module):
         self.fc1 = nn.Linear(self.input_size, self.output_size)
 
     def forward(self, x):
-        x = self.fc1(x.reshape(-1, self.input_size))
-        return F.log_softmax(x, dim=1)
+        return self.fc1(x.reshape(-1, self.input_size))
 
 
 class MLP(nn.Module):
@@ -26,6 +24,5 @@ class MLP(nn.Module):
 
     def forward(self, x):
         x = self.relu(self.fc1(x.reshape(-1, self.input_size)))
-        x = self.fc2(x)
 
-        return F.log_softmax(x, dim=1)
+        return self.fc2(x)

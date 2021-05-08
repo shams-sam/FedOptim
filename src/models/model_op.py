@@ -55,7 +55,7 @@ def add_param_list(param1, param2):
 
     assert len(param1) == len(param2)
     for idx in range(len(param1)):
-        param1[idx] = param1[idx] + param2[idx]
+        param1[idx] = param1[idx].cpu() + param2[idx].cpu()
 
     return param1
 

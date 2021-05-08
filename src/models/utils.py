@@ -4,11 +4,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from common.utils import get_device
+from models.cnn import CNN
 from models.fcn import FCN, MLP
 from models.multi_class_hinge_loss import multiClassHingeLoss
 from models.model_op import get_model_size
 import models.resnet as resnet
 from models.svm import SVM
+from models.vgg import VGG
 
 
 def forward(model, data, target, opt, loss_fn, device):
@@ -23,16 +25,18 @@ def forward(model, data, target, opt, loss_fn, device):
 
 
 def get_loss_fn(loss_fn):
-    if loss_fn == 'nll':
+    if loss_fn == 'ce':
         # loss_fn_ = F.nll_loss
         loss_fn_ = nn.CrossEntropyLoss()
+    elif loss_fn == 'mse':
+        loss_fn_ = nn.MSELoss()
     elif loss_fn == 'hinge':
         loss_fn_ = multiClassHingeLoss()
 
     return loss_fn_
 
 
-def get_model(args, ckpt_path=False):
+def get_model(args, parallel=True, ckpt_path=False):
     if args.clf == 'fcn':
         print('Initializing FCN...')
         model = FCN(args.input_size, args.output_size)
@@ -42,10 +46,24 @@ def get_model(args, ckpt_path=False):
     elif args.clf == 'svm':
         print('Initializing SVM...')
         model = SVM(args.input_size, args.output_size)
+    elif args.clf == 'cnn':
+        print('Initializing CNN...')
+        model = CNN(nc=args.num_channels,
+                    fs=args.cnn_view)
     elif args.clf == 'resnet18':
         print('Initializing ResNet18...')
         model = resnet.resnet18(
             num_channels=args.num_channels,
+            num_classes=args.output_size)
+    elif args.clf == 'vgg19':
+        print('Initializing VGG19...')
+        model = VGG(
+            vgg_name=args.clf,
+            num_classes=args.output_size)
+    elif args.clf == 'vgg11':
+        print('Initializing VGG11...')
+        model = VGG(
+            vgg_name=args.clf,
             num_classes=args.output_size)
 
     num_params, num_layers = get_model_size(model)
@@ -55,10 +73,13 @@ def get_model(args, ckpt_path=False):
         model.load_state_dict(torch.load(ckpt_path))
         print('Load init: {}'.format(ckpt_path))
 
-    model = nn.DataParallel(
-        model.to(get_device(args)), device_ids=args.device_id)
+    if parallel:
+        model = nn.DataParallel(
+            model.to(get_device(args)), device_ids=args.device_id)
+    else:
+        model = model.to(get_device(args))
 
-    loss_type = 'hinge' if args.clf == 'svm' else 'nll'
+    loss_type = 'hinge' if args.clf == 'svm' else args.loss_type
     print("Loss: {}".format(loss_type))
 
     return model, loss_type

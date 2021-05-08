@@ -9,12 +9,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
 
 from common.approximation import get_rp_dirs
 from common.argparser import argparser
 from common.arguments import Arguments
 from common.utils import get_device, get_paths, \
-    init_logger, is_approx, tb_model_summary
+    init_logger, is_approx
 from data.loader import get_loader
 from models.model_op import add_param_list, get_model_grads
 from models.multi_class_hinge_loss import multiClassHingeLoss
@@ -48,9 +49,12 @@ if args.batch_size == 0:
     args.batch_size = args.num_train
     print("Resetting batch size: {}...".format(args.batch_size))
 
-train_loader = get_loader(args.dataset, args.batch_size, True)
-test_loader = get_loader(
-    args.dataset, args.test_batch_size, False, False, args.noise)
+train_loader = get_loader(args.dataset, args.batch_size,
+                          train=True, subset=args.repeat)
+test_loader = get_loader(args.dataset, args.test_batch_size,
+                         train=False, shuffle=False, subset=args.repeat)
+print('Train size: ', len(train_loader.dataset))
+print('Test size: ', len(test_loader.dataset))
 
 print('+' * 80)
 
@@ -63,17 +67,21 @@ model, loss_type = get_model(args)
 agg_type = 'averaging'
 
 if 'sgd' in args.paradigm:
-    optim = optim.SGD(params=model.parameters(), lr=args.lr)
+    optimizer = optim.SGD(
+        params=model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
 elif 'adam' in args.paradigm:
-    optim = optim.Adam(params=model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(params=model.parameters(), lr=args.lr)
+if args.scheduler:
+    print('Initializing scheduler...')
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=args.epochs)
 
-if args.clf == 'svm':
+if loss_type == 'hinge':
     loss_fn = multiClassHingeLoss()
-    loss_type = 'hinge'
-else:
+elif loss_type == 'ce':
     loss_fn = nn.CrossEntropyLoss().to(device)
-    loss_type = 'nll'
-
+elif loss_type == 'mse':
+    loss_fn = nn.MSELoss().to(device)
 print('+' * 80)
 
 h_epoch = []
@@ -84,7 +92,7 @@ h_loss_test = []
 h_grads = []
 
 print('Pre-Training')
-tb_model_summary(model, test_loader, tb, device)
+# tb_model_summary(model, test_loader, tb, device)
 best, i = test(model, device, test_loader, loss_type)
 ii, iii = test(model, device, test_loader, loss_type)
 print('Acc: {:.4f}'.format(best))
@@ -116,22 +124,30 @@ for epoch in range(1, args.epochs + 1):
     running_loss = 0.0
     running_acc = 0.0
     gradi = 0
-    for data, target in train_loader:
-        optim.zero_grad()
+    for data, target in tqdm(train_loader, total=len(train_loader), leave=False):
+        optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
+        if loss_type == 'mse':
+            target = target.float()
         output = model(data)
         loss = loss_fn(output, target)
         loss.backward()
         if is_approx(args):
-            residuals, _ = sdirs_approximation(args, model, sdirs, residuals, device)
-        optim.step()
+            residuals, _ = sdirs_approximation(
+                args, model, sdirs, residuals, device)
+        optimizer.step()
         gradi = add_param_list(gradi, get_model_grads(model))
-        predi = output.argmax(1, keepdim=True)
-        correcti = predi.eq(target.view_as(predi)).sum().item()
         running_loss += loss.item()
-        running_acc += correcti/data.shape[0]
+        if loss_type != 'mse':
+            predi = output.argmax(1, keepdim=True)
+            correcti = predi.eq(target.view_as(predi)).sum().item()
+            running_acc += correcti/data.shape[0]
+        else:
+            running_acc = running_loss
         num_minibatches += 1
     gradi = [_/num_minibatches for _ in gradi]
+    if args.scheduler:
+        scheduler.step()
 
     h_grads.append(gradi)
     h_epoch.append(epoch)
@@ -139,9 +155,9 @@ for epoch in range(1, args.epochs + 1):
     h_loss_train.append(running_loss/num_minibatches)
 
     acc, loss = test(model, device, test_loader, loss_type)
-    for name, weight in model.named_parameters():
-        tb.add_histogram(name, weight, epoch)
-        tb.add_histogram(f'{name}.grad', weight.grad, epoch)
+    # for name, weight in model.named_parameters():
+    #     tb.add_histogram(name, weight, epoch)
+    #     tb.add_histogram(f'{name}.grad', weight.grad, epoch)
     h_acc_test.append(acc)
     h_loss_test.append(loss)
 

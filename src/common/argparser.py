@@ -8,7 +8,7 @@ def argparser():
     parser.add_argument('--dataset', type=str, required=False)
     parser.add_argument('--clf', type=str, required=False)
     parser.add_argument('--optim', type=str, required=False, default='sgd')
-
+    parser.add_argument('--scheduler', type=booltype, required=False, default=False)
     # Type of algorithm used: Stochastic, PCA, K-Grad, TopK, etc.
     parser.add_argument('--paradigm', type=str, nargs='+', required=False)
     parser.add_argument('--ncomponent', type=int, required=False)
@@ -31,9 +31,11 @@ def argparser():
     # Std Dev of Gaussian noise added to test datasets
     parser.add_argument('--noise', type=float, required=False)
     parser.add_argument('--epochs', type=int, required=False)
+    parser.add_argument('--loss-type', type=str, required=False, default='ce')
     parser.add_argument('--lr', type=float, required=False)
     parser.add_argument('--nesterov', type=booltype,
                         required=False, default=False)
+    parser.add_argument('--momentum', type=float, required=False, default=0)
     parser.add_argument('--decay', type=float, required=False, default=1e-5)
 
     parser.add_argument('--no-cuda', type=booltype,
@@ -54,7 +56,7 @@ def argparser():
     # number of class labels per node
     parser.add_argument('--non-iid', type=int, required=False)
     # if the samples should be repeated among nodes or be a partition
-    parser.add_argument('--repeat', type=int, required=False)
+    parser.add_argument('--repeat', type=float, required=False)
 
     parser.add_argument('--dry-run', type=booltype,
                         required=False, default=True)

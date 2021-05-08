@@ -187,15 +187,15 @@ def test(model, device, test_loader, loss_fn):
 
     for data, target in test_loader:
         data, target = data.to(device), target.to(device)
-
         output = model(data)
-        if loss_fn == 'nll':
-            running_loss += loss_fn_(output, target).item()
-        elif loss_fn == 'hinge':
-            running_loss += loss_fn_(output, target).item()
-        pred = output.argmax(1, keepdim=True)
-        correcti = pred.eq(target.view_as(pred)).sum().item()
-        running_acc += correcti/data.shape[0]
+
+        running_loss += loss_fn_(output, target).item()
+        if loss_fn != 'mse':
+            pred = output.argmax(1, keepdim=True)
+            correcti = pred.eq(target.view_as(pred)).sum().item()
+            running_acc += correcti/data.shape[0]
+        else:
+            running_acc = running_loss
         num_minibatches += 1
 
     return running_acc/num_minibatches, running_loss/num_minibatches

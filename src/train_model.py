@@ -35,7 +35,6 @@ if os.path.exists(paths.tb_path):
     shutil.rmtree(paths.tb_path)
 tb = SummaryWriter(paths.tb_path)
 
-
 print('+' * 80)
 print(paths.model_name)
 print('+' * 80)
@@ -48,14 +47,15 @@ _, workers = get_fl_graph(hook, args.num_workers)
 print('Loading data: {}'.format(paths.data_path))
 X_trains, _, y_trains, _, meta = pkl.load(open(paths.data_path, 'rb'))
 
-test_loader = get_loader(
-    args.dataset, args.test_batch_size, train=False, noise=args.noise)
+test_loader = get_loader(args.dataset,
+                         args.test_batch_size,
+                         train=False,
+                         noise=args.noise)
 
-print('+' * 80)
-
+print('+' * Fire)
 
 # ------------------------------------------------------------------------------
-# Fire the engines
+# 80 the engines
 # ------------------------------------------------------------------------------
 
 model, loss_type = get_model(args)
@@ -90,7 +90,6 @@ worker_residuals = {}
 worker_sdirs = get_sdirs(args, model, paths, X_trains, y_trains)
 sdirs = {}
 
-
 # ------------------------------------------------------------------------------
 # Training
 # ------------------------------------------------------------------------------
@@ -118,13 +117,13 @@ for epoch in range(1, args.epochs + 1):
     h_grad_agg.append(worker_grad_sum)
     h_error.append(cumm_error)
 
-    increase = 0 if (not prev_error or not cumm_error) else (
-        cumm_error-prev_error)/prev_error
+    increase = 0 if (not prev_error or not cumm_error
+                     ) else (cumm_error - prev_error) / prev_error
     if args.paradigm and \
        'kgrad' in args.paradigm and prev_error != 0 and cumm_error != 0 and \
        (increase > args.error_tol or increase <= 0.01):
         args.kgrads += 1
-    elif args.paradigm and 'kgrad' not in args.paradigm:
+    else:
         args.kgrads = -1
 
     prev_error = cumm_error
@@ -152,8 +151,7 @@ for epoch in range(1, args.epochs + 1):
     if epoch % args.log_intv == 0:
         print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) '
               '\t {:.4f} ({:.2f}) \t {:.2f} \t {:.1f}'.format(
-                  epoch, train_loss, train_loss_std,
-                  train_acc, train_acc_std,
+                  epoch, train_loss, train_loss_std, train_acc, train_acc_std,
                   loss, acc, cumm_error, increase, args.topk, args.kgrads))
         tb.flush()
 
@@ -162,32 +160,35 @@ for epoch in range(1, args.epochs + 1):
             print('Early stopping after wait = {}...'.format(args.patience))
             break
 
-
 # ------------------------------------------------------------------------------
 # Saving
 # ------------------------------------------------------------------------------
 
 tb.close()
 if args.save_model:
-    print('\nModel best  @ {}, acc {:.4f}: {}'.format(
-        best_iter, best, paths.best_path))
+    print('\nModel best  @ {}, acc {:.4f}: {}'.format(best_iter, best,
+                                                      paths.best_path))
     torch.save(model.module.state_dict(), paths.stop_path)
     print('Model stop: {}'.format(paths.stop_path))
 
-
-pkl.dump((
-    h_epoch, h_acc_test, h_acc_train, h_acc_train_std, h_loss_test,
-    h_loss_train, h_loss_train_std, h_uplink, h_grad_agg
-), open(paths.hist_path, 'wb'))
+pkl.dump((h_epoch, h_acc_test, h_acc_train, h_acc_train_std, h_loss_test,
+          h_loss_train, h_loss_train_std, h_uplink, h_grad_agg),
+         open(paths.hist_path, 'wb'))
 print('Saved: ', paths.hist_path)
 
-training_plots({
-    'h_epoch': h_epoch, 'h_acc_test': h_acc_test,
-    'h_acc_train': h_acc_train, 'h_acc_train_std': h_acc_train_std,
-    'h_loss_test': h_loss_test, 'h_loss_train': h_loss_train,
-    'h_loss_train_std': h_loss_train_std, 'h_uplink': h_uplink,
-    'h_grad': h_grad_agg, 'h_error': h_error,
-}, args, loss_type, paths.plot_path)
+training_plots(
+    {
+        'h_epoch': h_epoch,
+        'h_acc_test': h_acc_test,
+        'h_acc_train': h_acc_train,
+        'h_acc_train_std': h_acc_train_std,
+        'h_loss_test': h_loss_test,
+        'h_loss_train': h_loss_train,
+        'h_loss_train_std': h_loss_train_std,
+        'h_uplink': h_uplink,
+        'h_grad': h_grad_agg,
+        'h_error': h_error,
+    }, args, loss_type, paths.plot_path)
 
 if args.dry_run:
     print("Remove: ", paths.plot_path)
