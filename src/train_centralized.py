@@ -14,6 +14,7 @@ from tqdm import tqdm
 from common.approximation import get_rp_dirs
 from common.argparser import argparser
 from common.arguments import Arguments
+import common.config as cfg
 from common.utils import get_device, get_paths, \
     init_logger, is_approx
 from data.loader import get_loader
@@ -50,9 +51,11 @@ if args.batch_size == 0:
     print("Resetting batch size: {}...".format(args.batch_size))
 
 train_loader = get_loader(args.dataset, args.batch_size,
-                          train=True, subset=args.repeat)
+                          train=True, subset=args.repeat,
+                          force_resize=cfg.model_im_size[args.clf])
 test_loader = get_loader(args.dataset, args.test_batch_size,
-                         train=False, shuffle=False, subset=args.repeat)
+                         train=False, shuffle=False, subset=args.repeat,
+                         force_resize=cfg.model_im_size[args.clf])
 print('Train size: ', len(train_loader.dataset))
 print('Test size: ', len(test_loader.dataset))
 

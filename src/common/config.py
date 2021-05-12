@@ -4,17 +4,17 @@ tb_dir = '/root/WorkSpace/FedOptim/runs'
 download = False
 
 num_trains = {
-    'celeba': 81385, # total 162770
+    'celeba': 81385,  # total 162770
     'cifar': 50000,
-    'coco': 59144, # total 118287
+    'coco': 59144,  # total 118287
     'fmnist': 60000,
     'mnist': 60000,
 }
 
 num_tests = {
-    'celeba': 9934, # total 19867
+    'celeba': 9934,  # total 19867
     'cifar': 10000,
-    'coco': 5000, # total 5000
+    'coco': 5000,  # total 5000
     'fmnist': 10000,
     'mnist': 10000,
 }
@@ -31,7 +31,7 @@ output_sizes = {
     'celeba': 10,
     'cifar': 10,
     'coco': 32*32,
-    'fmnist': 10,    
+    'fmnist': 10,
     'mnist': 10,
 }
 
@@ -53,4 +53,12 @@ cnn_view = {
 im_size = {
     'celeba': 32,
     'coco': 32,
+}
+
+model_im_size = {
+    'cnn': 0,
+    'fcn': 0,
+    'resnet18': 0,
+    'svm': 0,
+    'vgg19': 32,
 }

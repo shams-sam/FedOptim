@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 
 from common.utils import get_device
@@ -57,11 +56,6 @@ def get_model(args, parallel=True, ckpt_path=False):
             num_classes=args.output_size)
     elif args.clf == 'vgg19':
         print('Initializing VGG19...')
-        model = VGG(
-            vgg_name=args.clf,
-            num_classes=args.output_size)
-    elif args.clf == 'vgg11':
-        print('Initializing VGG11...')
         model = VGG(
             vgg_name=args.clf,
             num_classes=args.output_size)

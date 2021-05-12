@@ -20,8 +20,6 @@ histories = args['h']
 momentum = args['m']
 dry_run = args['dry_run']
 
-assert len(momentums) == len(histories)
-
 
 def momentum_grad(prev_v, grad, momentum):
     return momentum * prev_v + grad
@@ -31,7 +29,8 @@ for history in histories:
     print('Processing: {}'.format(history))
     save_path = '{}_processed_grads.pkl'.format(history[:-4])
     if dry_run:
-        assert os.path.exists(history), "{} not found".format(history)
+        print('training : {}'.format(os.path.exists(history)))
+        print('processed: {}\n\n'.format(os.path.exists(save_path)))
         continue
     h = pkl.load(open(history, 'rb'))
 
@@ -53,6 +52,7 @@ for history in histories:
                 np.vstack(grad_stack).T, 0.99)[0]
             mat_95[i, layer_num] = estimate_optimal_ncomponents(
                 np.vstack(grad_stack).T, 0.95)[0]
+            assert mat_95[i, layer_num] <= mat_99[i, layer_num]
         grad_stack = np.vstack(grad_stack).T
 
         pca_stack, _ = pca_transform(grad_stack, int(mat_99[i, layer_num]))

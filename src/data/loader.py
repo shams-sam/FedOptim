@@ -57,7 +57,7 @@ def get_dataloader(data, targets, batchsize, shuffle=False):
 
 
 def get_loader(dataset, batch_size, train=True,
-               shuffle=True, subset=1.0,
+               shuffle=True, subset=1.0, force_resize=0,
                noise=False, permutation=False):
     kwargs = {}
     if dataset == 'amazon':
@@ -69,6 +69,8 @@ def get_loader(dataset, batch_size, train=True,
             'std': (0.3106, 0.2904, 0.2897),
             'im_size': cfg.im_size[dataset]
         }
+        if force_resize:
+            params['im_size'] = force_resize
         if noise:
             params['noise'] = noise
         if permutation:
@@ -89,6 +91,8 @@ def get_loader(dataset, batch_size, train=True,
             'mean': (0.4914, 0.4822, 0.4465),
             'std': (0.2023, 0.1994, 0.2010),
         }
+        if force_resize:
+            params['im_size'] = force_resize
         if noise:
             params['noise'] = noise
         if permutation:
@@ -107,6 +111,8 @@ def get_loader(dataset, batch_size, train=True,
             'std': (0.2463, 0.2424, 0.2596),
             'im_size': cfg.im_size[dataset]
         }
+        if force_resize:
+            params['im_size'] = force_resize
         if noise:
             params['noise'] = noise
         if permutation:
@@ -137,6 +143,8 @@ def get_loader(dataset, batch_size, train=True,
             'mean': (0.2861,),
             'std': (0.3530,),
         }
+        if force_resize:
+            params['im_size'] = force_resize
         if noise:
             params['noise'] = noise
         if permutation:
@@ -153,6 +161,8 @@ def get_loader(dataset, batch_size, train=True,
             'mean': (0.1307,),
             'std': (0.3081,),
         }
+        if force_resize:
+            params['im_size'] = force_resize
         if noise:
             params['noise'] = noise
         if permutation:
