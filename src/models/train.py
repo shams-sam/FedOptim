@@ -191,7 +191,7 @@ def test(model, device, test_loader, loss_fn):
 
         running_loss += loss_fn_(output, target).item()
         if loss_fn != 'mse':
-            pred = output.argmax(1, keepdim=True)
+            pred = output.view(-1, output.size(1)).argmax(1, keepdim=True) # output.argmax(1, keepdim=True)
             correcti = pred.eq(target.view_as(pred)).sum().item()
             running_acc += correcti/data.shape[0]
         else:

@@ -99,7 +99,7 @@ for j, history in enumerate(histories):
                )
 
 plt.subplots_adjust(hspace=0.25, wspace=0.3)
-if not final:
+if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:
     plt.savefig(save_path + '.pdf', bbox_inches='tight', dpi=300)

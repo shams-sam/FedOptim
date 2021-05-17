@@ -9,6 +9,7 @@ from models.multi_class_hinge_loss import multiClassHingeLoss
 from models.model_op import get_model_size
 import models.resnet as resnet
 from models.svm import SVM
+from models.unet import UNet
 from models.vgg import VGG
 
 
@@ -58,7 +59,13 @@ def get_model(args, parallel=True, ckpt_path=False):
         print('Initializing VGG19...')
         model = VGG(
             vgg_name=args.clf,
+            num_channels=args.num_channels,
             num_classes=args.output_size)
+    elif args.clf == 'unet':
+        print('Initializing UNet...')
+        model = UNet(
+            in_channels=args.num_channels,
+            out_channels=args.output_size)
 
     num_params, num_layers = get_model_size(model)
     print("# params: {}\n# layers: {}".format(num_params, num_layers))

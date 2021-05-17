@@ -5,9 +5,10 @@ from data.loader import get_loader
 
 
 datasets = [
-    'celeba', 'cifar',
-    'coco',
-    'fmnist', 'mnist'
+#     'celeba', 'cifar',
+#     'coco',
+    'voc',
+#     'fmnist', 'mnist'
 ]
 test_subset = [
     'celeba', 'coco'

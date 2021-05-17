@@ -42,17 +42,31 @@ for history in histories:
     overlap_95 = []
     overlap_self = []
     prev_v = [torch.zeros_like(_) for _ in grads[0]]
+
+    layers_processed = 0
     for layer_num in tqdm(range(len(grads[0]))):
+        
         grad_stack = []
         for i, igrad in enumerate(grads):
             prev_v[layer_num] = momentum_grad(
                 prev_v[layer_num], igrad[layer_num], momentum)
             grad_stack.append(prev_v[layer_num].cpu().flatten().numpy())
-            mat_99[i, layer_num] = estimate_optimal_ncomponents(
-                np.vstack(grad_stack).T, 0.99)[0]
-            mat_95[i, layer_num] = estimate_optimal_ncomponents(
-                np.vstack(grad_stack).T, 0.95)[0]
+            skip_layer = not prev_v[layer_num].sum().item()
+            if not skip_layer:
+                n_99 = estimate_optimal_ncomponents(
+                    np.vstack(grad_stack).T, 0.99)
+                n_95 = estimate_optimal_ncomponents(
+                    np.vstack(grad_stack).T, 0.95)
+                mat_99[i, layer_num] = n_99[0]
+                mat_95[i, layer_num] = n_95[0]
+            else:
+                mat_99[i, layer_num] = 1
+                mat_95[i, layer_num] = 1
             assert mat_95[i, layer_num] <= mat_99[i, layer_num]
+        if skip_layer:
+            print('skipping layer {}...'.format(layer_num))
+            continue
+        layers_processed += 1
         grad_stack = np.vstack(grad_stack).T
 
         pca_stack, _ = pca_transform(grad_stack, int(mat_99[i, layer_num]))
@@ -72,6 +86,7 @@ for history in histories:
     for layer_num in range(len(grads[0])):
         num_params[layer_num] = grads[0][layer_num].flatten().size(0)
 
+    print('Layers processed: {}/{}\n'.format(layers_processed, len(grads[0])))
     print('Saving: {}\n\n'.format(save_path))
     pkl.dump({
         'mat_99': mat_99,

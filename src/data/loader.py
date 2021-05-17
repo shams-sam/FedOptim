@@ -174,5 +174,32 @@ def get_loader(dataset, batch_size, train=True,
                            download=cfg.download,
                            transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif dataset == 'voc':
+        train = 'train' if train else 'val'
+        params = {
+            'mean': (0.4568, 0.4432, 0.4083),
+            'std': (0.2440, 2414, 2591),
+            'im_size': cfg.im_size[dataset]
+        }
+        if noise:
+            params['noise'] = noise
+        if force_resize:
+            params['im_size'] = force_resize
+        if permutation:
+            params['permutation'] = permutation
+        transform = _get_transform(params)
+        target_transform = transforms.Compose([
+            transforms.Resize((cfg.im_size[dataset], cfg.im_size[dataset])),
+            transforms.Lambda(lambda x: torch.from_numpy(
+                np.array(x).astype(int))),
+            transforms.Lambda(lambda x: torch.clip(x, max=cfg.output_sizes[dataset]-1)),
+        ])
+        
+        loader = torch.utils.data.DataLoader(
+            datasets.VOCSegmentation(cfg.data_dir, image_set=train,
+                                     download=cfg.download,
+                                     transform=transform,
+                                     target_transform=target_transform),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
 
     return loader

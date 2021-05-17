@@ -142,7 +142,7 @@ for epoch in range(1, args.epochs + 1):
         gradi = add_param_list(gradi, get_model_grads(model))
         running_loss += loss.item()
         if loss_type != 'mse':
-            predi = output.argmax(1, keepdim=True)
+            predi = output.view(-1, output.size(1)).argmax(1, keepdim=True)
             correcti = predi.eq(target.view_as(predi)).sum().item()
             running_acc += correcti/data.shape[0]
         else:

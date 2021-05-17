@@ -1,6 +1,7 @@
 import os
 
 from PIL import Image
+import torch
 from torchvision.datasets import CocoDetection
 
 import common.config as cfg
@@ -14,9 +15,15 @@ class Coco(CocoDetection):
         img_id = self.ids[index]
         ann_ids = coco.getAnnIds(imgIds=img_id)
         im_resize = cfg.im_size['coco']
-        ann = coco.loadAnns(ann_ids)[0]
-        target = coco.annToMask(ann)
-
+        ann_loaded = coco.loadAnns(ann_ids)
+        if len(ann_loaded):
+            ann = ann_loaded[0]
+        else:
+            ann = False
+        if ann:
+            target = coco.annToMask(ann)
+        else:
+            target = torch.zeros(im_resize, im_resize)
         path = coco.loadImgs(img_id)[0]['file_name']
 
         img = Image.open(os.path.join(self.root, path)).convert('RGB')
