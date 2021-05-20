@@ -59,7 +59,7 @@ mnist(){
 	../ckpts/mnist/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_128.pkl \
         ../ckpts/mnist/history/clf_vgg19_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_256.pkl \
         ../ckpts/mnist/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_256.pkl \
-        --m 0 --dry-run $dry
+        --m 0.9 --dry-run $dry
 }
 
 

@@ -89,7 +89,8 @@ def get_model(args, parallel=True, ckpt_path=False):
 def get_optim(args, model):
     if args.optim == 'sgd':
         opt = optim.SGD(
-            params=model.parameters(), lr=args.lr)
+            params=model.parameters(), lr=args.lr,
+            momentum=args.momentum)
     elif args.optim == 'adam':
         opt = optim.Adam(
             params=model.parameters(), lr=args.lr)

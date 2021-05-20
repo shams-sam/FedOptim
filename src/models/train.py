@@ -1,4 +1,6 @@
+from copy import deepcopy
 import numpy as np
+from tqdm import tqdm
 
 from common.utils import add_gaussian_noise, is_approx
 from data.distributor import get_cluster_sizes
@@ -60,7 +62,9 @@ def topk(args, node_model, worker_residuals):
 
 def worker_process(args, model, loss_fn,
                    worker_data, worker_targets, worker_num_samples,
-                   sdirs, worker_residuals, device):
+                   worker_mbuf, sdirs, worker_residuals, device):
+    # mbuf: momentum buffer
+
     node_model = model.copy()
     uplink, _ = get_model_size(node_model)
     opt = get_optim(args, node_model)
@@ -72,29 +76,33 @@ def worker_process(args, model, loss_fn,
     correct = 0
     total_loss = 0
     error_per_worker = 0
-    worker_batch_grads = 0
 
-    for data, target in dataloader:
+    num_batches = len(dataloader)
+    for batch_id, (data, target) in enumerate(dataloader):
         loss, c = forward(node_model, data, target,
                           opt, loss_fn, device)
         correct += c
+        opt.zero_grad()
         loss.backward()
         total_loss += loss.item()
 
-        if args.paradigm:
-            error = 0
-            if 'topk' in args.paradigm:
-                uplink, error = topk(
-                    args, node_model, worker_residuals, device)
-            elif is_approx(args) and len(sdirs):
-                worker_residuals, error = sdirs_approximation(
-                    args, node_model, sdirs, worker_residuals, device)
-                uplink = len(sdirs)
-            error_per_worker += error
-        worker_batch_grads = add_param_list(
-            worker_batch_grads, get_model_grads(node_model))
+        worker_grads = get_model_grads(node_model)
+        # opt.step()
+        worker_mbuf = model_update(node_model, worker_grads,
+                                   args, device, [])
+
+    if args.paradigm:
+        error = 0
+        if 'topk' in args.paradigm:
+            uplink, error = topk(
+                args, node_model, worker_residuals, device)
+        elif 'lbgm' in args.paradigm:
+            worker_residuals, error = lbgm_approximation(
+                args, node_model, sdirs, worker_residuals, device)
+            uplink = len(sdirs)
+        error_per_worker += error
+
     num_batches = len(dataloader)
-    worker_grads = [_/num_batches for _ in worker_batch_grads]
     if args.noise:
         worker_grads = [add_gaussian_noise(
             args, _.cpu()).to(device) for _ in worker_grads]
@@ -103,12 +111,67 @@ def worker_process(args, model, loss_fn,
 
     error_per_worker /= num_batches
 
-    return node_model, worker_grads, worker_residuals, \
+    return node_model, worker_grads, worker_mbuf, worker_residuals, \
         total_loss/num_batches, correct/worker_num_samples, \
         error_per_worker, uplink
 
 
 def fl_train(args, model, nodes, X_trains, y_trains,
+             device, loss_fn, worker_models,
+             worker_mbufs, model_mbuf=[]):
+    # worker_mbufs: worker momentum buffer
+    # model_mbuf: model momentum buffer
+
+    loss_fn_ = get_loss_fn(loss_fn)
+    uplink, _ = get_model_size(model)
+
+    # uncomment the next line if model.eval() in test
+    model.train()
+
+    worker_data = {}
+    worker_targets = {}
+    worker_num_samples = {}
+    worker_losses = {}
+    worker_accs = {}
+    worker_grad_sum = 0
+
+    # send data, model to workers
+    workers = [_ for _ in nodes.keys() if 'L0' in _]
+    for w, x, y in zip(workers, X_trains, y_trains):
+        worker_data[w] = x.send(nodes[w])
+        worker_targets[w] = y.send(nodes[w])
+        worker_num_samples[w] = x.shape[0]
+
+    # train workers
+    uplink = 0
+    for w in tqdm(workers, leave=False):
+
+        # approximations in training occur in worker_process
+        node_model, node_batch_grads, worker_mbufs[w], residuals, loss, acc, \
+            error_per_worker, u = worker_process(
+                args, model, loss_fn_, worker_data[w],
+                worker_targets[w], worker_num_samples[w],
+                worker_mbufs[w] if w in worker_mbufs else [],
+                [], [], device)
+        uplink += min(uplink, u)
+
+        worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
+        worker_losses[w] = loss
+        worker_accs[w] = acc
+
+    model_mbuf = model_update(
+        model, worker_grad_sum, args, device, model_mbuf)
+
+    loss = np.array([_ for dump, _ in worker_losses.items()])
+    acc = np.array([_ for dump, _ in worker_accs.items()])
+    loss_mean, loss_std = loss.mean(), loss.std()
+    acc_mean, acc_std = acc.mean(), acc.std()
+
+    return loss_mean, loss_std, acc_mean, acc_std, \
+        worker_grad_sum, uplink
+
+
+def fl_train_(args, model, nodes, X_trains, y_trains,
              device, loss_fn, worker_models,
              worker_sdirs, sdirs, worker_residuals):
     loss_fn_ = get_loss_fn(loss_fn)
@@ -180,7 +243,7 @@ def test(model, device, test_loader, loss_fn):
     # eval creates issue for models with batch normalization issue
     # pytorch issue discussed here:
     # https://discuss.pytorch.org/t/model-eval-gives-incorrect-loss-for-model-with-batchnorm-layers/7561/45
-    # model.eval()
+    model.eval()
     num_minibatches = 0
     running_loss = 0.0
     running_acc = 0.0

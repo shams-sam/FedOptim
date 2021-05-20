@@ -12,7 +12,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--dataset", required=True, type=str)
 ap.add_argument("--num-nodes", required=True, type=int)
 ap.add_argument("--non-iid", required=True, type=int)
-ap.add_argument("--repeat", required=False, type=int, default=True)
+ap.add_argument("--repeat", required=False, type=float, default=True)
 ap.add_argument("--shuffle", required=False, type=booltype, default=True)
 ap.add_argument("--stratify", required=False, type=booltype, default=True)
 ap.add_argument("--uniform", required=False, type=booltype, default=False)
@@ -40,7 +40,7 @@ for data, target in test_loader:
 
 
 def repeat_data(data, repeat):
-    rep = [data for _ in range(repeat)]
+    rep = [data for _ in range(int(repeat))]
     rep = torch.cat(rep, dim=0)
 
     return rep

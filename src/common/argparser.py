@@ -10,7 +10,8 @@ def argparser():
     parser.add_argument('--optim', type=str, required=False, default='sgd')
     parser.add_argument('--scheduler', type=booltype, required=False, default=False)
     # Type of algorithm used: Stochastic, PCA, K-Grad, TopK, etc.
-    parser.add_argument('--paradigm', type=str, nargs='+', required=False)
+    parser.add_argument('--paradigm', type=str, nargs='+', required=False, default=[])
+    parser.add_argument('--p-args', type=str, nargs='+', required=False)
     parser.add_argument('--ncomponent', type=int, required=False)
     parser.add_argument('--rp-eps', type=float, required=False)
     parser.add_argument('--pca-var', type=float, required=False)

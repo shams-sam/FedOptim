@@ -51,18 +51,25 @@ l_params = meta['num_params']
 num_layers = len(l_params)
 n_epochs = mat_99.shape[0]
 
+slrsi = num_layers % cols # second_last_row_start_index
 for layer_num, olap in tqdm(enumerate(overlap_self, 1), total=len(overlap_self)):
+    curr_row = layer_num // (cols)
+    curr_col = layer_num % cols
+    curr_row = curr_row if curr_col else curr_row-1
+    curr_col = curr_col if curr_col else cols
+    
     ax = fig.add_subplot(rows, cols, plot_idx)
     im = sns.heatmap(np.abs(olap), ax=ax, vmin=0.0, vmax=1.0, cbar=False,
                      xticklabels=n_epochs // 4, yticklabels=n_epochs // 4)
-    if layer_num <= cols:
+    if curr_row == 0 or rows == 1:
         ax.set_title('{}, L#{}\n#elem: {}'.format(
             dataset, layer_num, l_params[layer_num - 1]), fontsize=30)
     else:
         ax.set_title('L#{}\n#elem: {}'.format(
             layer_num, l_params[layer_num - 1]), fontsize=30)
+    if curr_row == rows-1 or (curr_row == rows-2 and curr_col > slrsi and slrsi):
         ax.set_xlabel('epoch gradients', fontsize=30)
-    if layer_num % cols == 1:
+    if curr_col == 1:
         ax.set_ylabel('epoch gradients', fontsize=30)
 
     plot_idx += 1

@@ -205,13 +205,27 @@ def model_gradient(model1, model2, lr):
     return grads
 
 
-def model_update(model, grads, lr):
+def momentum_grad(prev_v, grad, momentum, device):
+    return momentum * prev_v.to(device) + grad
+
+
+def model_update(model, grads, args, device, prev_v=[]):
     idx = 0
+    accum_v = []
     for param in model.parameters():
-        update = param - 1*lr*grads[idx]
+        d = grads[idx]
+        
+        if args.momentum:
+            if len(prev_v):
+                d = args.momentum * prev_v[idx] + d
+                accum_v.append(d)
+            else:
+                accum_v.append(d)
+
         with torch.no_grad():
-            param.copy_(update)
+            param.copy_(param.add(-args.lr, d.to(device)))
         idx += 1
+    return accum_v
 
 
 def norm(weight):

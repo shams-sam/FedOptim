@@ -12,6 +12,7 @@ class Arguments():
         self.optim = args.optim
         self.scheduler = args.scheduler
         self.paradigm = args.paradigm
+        self.p_args = args.p_args
         self.ncomponent = args.ncomponent
         self.rp_eps = args.rp_eps
         self.pca_var = args.pca_var

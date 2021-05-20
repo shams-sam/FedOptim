@@ -1,4 +1,6 @@
 beautifulsoup4
+fasttext
+datasets
 gensim
 nltk
 networkx
@@ -11,6 +13,7 @@ sqlalchemy
 syft==0.2.9
 terminaltables
 torchsummary
+transformers
 tqdm
 wordcloud
 xgboost

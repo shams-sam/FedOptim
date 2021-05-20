@@ -8,6 +8,7 @@ from torchvision import datasets, transforms
 import common.config as cfg
 from common.utils import AddGaussianNoise
 from data.coco import Coco
+from datasets import load_dataset
 
 
 def _get_subset_index(classes, split=0.3):
@@ -59,9 +60,12 @@ def get_dataloader(data, targets, batchsize, shuffle=False):
 def get_loader(dataset, batch_size, train=True,
                shuffle=True, subset=1.0, force_resize=0,
                noise=False, permutation=False):
-    kwargs = {}
+    kwargs = {'num_workers': 8}
     if dataset == 'amazon':
         train = 'train' if train else 'valid'
+        dataset = load_dataset('amazon_reviews_multi', 'en',
+                               cache_dir=data_dir, split=train)
+        return dataset
     elif dataset == 'celeba':
         train = 'train' if train else 'valid'
         params = {
