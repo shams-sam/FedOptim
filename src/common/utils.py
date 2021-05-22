@@ -78,6 +78,7 @@ def get_paths(args):
         ))
 
     if args.dry_run:
+        print(model_name)
         model_name = 'debug'
     if args.noise:
         model_name += '_noise_{}'.format(args.noise)

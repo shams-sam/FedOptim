@@ -196,11 +196,12 @@ def get_loader(dataset, batch_size, train=True,
             transforms.Resize((cfg.im_size[dataset], cfg.im_size[dataset])),
             transforms.Lambda(lambda x: torch.from_numpy(
                 np.array(x).astype(int))),
-            transforms.Lambda(lambda x: torch.clip(x, max=cfg.output_sizes[dataset]-1)),
+            transforms.Lambda(lambda x: torch.clamp(
+                x, max=cfg.output_sizes[dataset] - 1)),
         ])
-        
+
         loader = torch.utils.data.DataLoader(
-            datasets.VOCSegmentation(cfg.data_dir, image_set=train,
+            datasets.VOCSegmentation('{}/VOC'.format(cfg.data_dir), image_set=train,
                                      download=cfg.download,
                                      transform=transform,
                                      target_transform=target_transform),

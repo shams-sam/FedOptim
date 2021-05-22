@@ -94,8 +94,8 @@ worker_models = {}
 worker_mbufs = {}
 model_mbuf = []
 worker_residuals = {}
-worker_sdirs = get_sdirs(args, model, paths, X_trains, y_trains)
-sdirs = {}
+worker_sdirs = {}
+# sdirs = {}
 
 # ------------------------------------------------------------------------------
 # Training
@@ -109,27 +109,19 @@ print('Training w/ optim:{} and paradigm {}'.format(
 print('epoch \t tr loss (acc) (mean+-std) \t test loss (acc) \t lbgm+-std')
 for epoch in range(1, args.epochs + 1):
     h_epoch.append(epoch)
+    train_loss, train_loss_std, train_acc, train_acc_std, \
+        worker_grad_sum, model_mbuf, uplink, avg_rho = fl_train(
+            args, model, workers, X_trains, y_trains,
+            device, loss_type, worker_models,
+            worker_mbufs, model_mbuf, worker_sdirs, worker_residuals)
 
-    if 'fedavg' in args.paradigm:
-        train_loss, train_loss_std, train_acc, train_acc_std, \
-            worker_grad_sum, uplink, sdirs, worker_residuals, \
-            cumm_error = fl_train(
-                args, model, workers, X_trains, y_trains, device, loss_type,
-                worker_models, worker_sdirs, sdirs, worker_residuals)
-    else:
-        train_loss, train_loss_std, train_acc, train_acc_std, \
-            worker_grad_sum, model_mbuf, uplink = fl_train(
-                args, model, workers, X_trains, y_trains,
-                device, loss_type, worker_models,
-                worker_mbufs, model_mbuf)
-        cumm_error = 0
     h_acc_train.append(train_acc)
     h_acc_train_std.append(train_acc_std)
     h_loss_train.append(train_loss)
     h_loss_train_std.append(train_loss_std)
     h_uplink.append(uplink)
     h_grad_agg.append(worker_grad_sum)
-    h_error.append(cumm_error)
+    h_error.append(1-avg_rho)
 
     acc, loss = test(model, device, test_loader, loss_type)
     h_acc_test.append(acc)
@@ -151,7 +143,7 @@ for epoch in range(1, args.epochs + 1):
     if epoch % args.log_intv == 0:
         print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) \t {:.4f} '.format(
                   epoch, train_loss, train_loss_std, train_acc, train_acc_std,
-                  loss, acc, cumm_error))
+                  loss, acc, avg_rho))
         tb.flush()
 
     if wait > args.patience:

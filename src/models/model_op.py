@@ -80,7 +80,7 @@ def calc_projection(a, b, device):
     a = a.clone().to(device)
     b = b.clone().to(device)
 
-    return (torch.dot(a, b)/torch.dot(b, b))
+    return (torch.dot(a, b) / torch.dot(b, b)).item()
 
 
 def get_layer_size(model, flatten=True):
@@ -166,6 +166,40 @@ def gradient_approximation(model, sdirs, device, residuals):
         error_norm += torch.norm(residuals[-1]).item()/torch.norm(g).item()
         num_layers += 1
     return residuals, error_norm/num_layers
+
+
+# fb: feedback
+def lbgm_approximation(args, model, lbgs, residuals, device):
+    accum_rho = 0.0
+    accum_lbgs = []
+    accum_residuals = []
+    uplink = 0
+    for i, p in enumerate(model.parameters()):
+        size = p.grad.size()
+        grad_flat = p.grad.clone().flatten()
+        grad_res = residuals[i] if len(residuals) else torch.zeros_like(grad_flat)
+        grad_flat = grad_flat + grad_res
+
+        if len(lbgs):
+            rho = calc_projection(grad_flat, lbgs[i], device)
+        else:
+            rho = 0.0
+
+        if rho >= args.error_tol:
+            update = rho * lbgs[i]
+            accum_residuals.append(grad_flat - update)
+            accum_rho += rho
+            accum_lbgs.append(lbgs[i])
+            uplink += 1
+        else:
+            update = grad_flat
+            accum_lbgs.append(update.clone())
+            accum_residuals.append(torch.zeros_like(update))
+            uplink += len(update)
+        p.grad.copy_(update.reshape(size))
+
+    # number of layers = (i+1) and not i because its zero-indexed
+    return accum_lbgs, accum_residuals, uplink, accum_rho / (i + 1)
 
 
 def block_gradient_approximation(model, sdirs, device, residuals):

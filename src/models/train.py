@@ -6,7 +6,7 @@ from common.utils import add_gaussian_noise, is_approx
 from data.distributor import get_cluster_sizes
 from data.loader import get_dataloader
 from models.model_op import get_model_grads, add_param_list, get_model_size,\
-    gradient_approximation, model_update, topk_sparsify
+    gradient_approximation, lbgm_approximation, model_update, topk_sparsify
 from models.utils import forward, get_loss_fn, get_optim
 
 
@@ -75,7 +75,6 @@ def worker_process(args, model, loss_fn,
 
     correct = 0
     total_loss = 0
-    error_per_worker = 0
 
     num_batches = len(dataloader)
     for batch_id, (data, target) in enumerate(dataloader):
@@ -90,6 +89,7 @@ def worker_process(args, model, loss_fn,
         # opt.step()
         worker_mbuf = model_update(node_model, worker_grads,
                                    args, device, [])
+        # momentum on local updates will increase heterogeneity
 
     if args.paradigm:
         error = 0
@@ -97,10 +97,10 @@ def worker_process(args, model, loss_fn,
             uplink, error = topk(
                 args, node_model, worker_residuals, device)
         elif 'lbgm' in args.paradigm:
-            worker_residuals, error = lbgm_approximation(
+            sdirs, worker_residuals, u, avg_rho = lbgm_approximation(
                 args, node_model, sdirs, worker_residuals, device)
-            uplink = len(sdirs)
-        error_per_worker += error
+            uplink = min(u, uplink)
+        worker_grads = get_model_grads(node_model)
 
     num_batches = len(dataloader)
     if args.noise:
@@ -109,16 +109,15 @@ def worker_process(args, model, loss_fn,
     worker_grads = [_ * worker_num_samples/args.num_train
                     for _ in worker_grads]
 
-    error_per_worker /= num_batches
-
     return node_model, worker_grads, worker_mbuf, worker_residuals, \
-        total_loss/num_batches, correct/worker_num_samples, \
-        error_per_worker, uplink
+        total_loss / num_batches, correct / worker_num_samples, \
+        avg_rho, sdirs, uplink
 
 
 def fl_train(args, model, nodes, X_trains, y_trains,
              device, loss_fn, worker_models,
-             worker_mbufs, model_mbuf=[]):
+             worker_mbufs, model_mbuf=[],
+             worker_sdirs={}, worker_residuals={}):
     # worker_mbufs: worker momentum buffer
     # model_mbuf: model momentum buffer
 
@@ -137,6 +136,7 @@ def fl_train(args, model, nodes, X_trains, y_trains,
 
     # send data, model to workers
     workers = [_ for _ in nodes.keys() if 'L0' in _]
+    num_workers = len(workers)
     for w, x, y in zip(workers, X_trains, y_trains):
         worker_data[w] = x.send(nodes[w])
         worker_targets[w] = y.send(nodes[w])
@@ -144,16 +144,19 @@ def fl_train(args, model, nodes, X_trains, y_trains,
 
     # train workers
     uplink = 0
+    avg_rho = 0
     for w in tqdm(workers, leave=False):
 
         # approximations in training occur in worker_process
         node_model, node_batch_grads, worker_mbufs[w], residuals, loss, acc, \
-            error_per_worker, u = worker_process(
+            rho_per_worker, worker_sdirs[w], u = worker_process(
                 args, model, loss_fn_, worker_data[w],
                 worker_targets[w], worker_num_samples[w],
                 worker_mbufs[w] if w in worker_mbufs else [],
-                [], [], device)
+                worker_sdirs[w] if w in worker_sdirs else [],
+                [], device)
         uplink += min(uplink, u)
+        avg_rho += rho_per_worker
 
         worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
         worker_losses[w] = loss
@@ -168,7 +171,7 @@ def fl_train(args, model, nodes, X_trains, y_trains,
     acc_mean, acc_std = acc.mean(), acc.std()
 
     return loss_mean, loss_std, acc_mean, acc_std, \
-        worker_grad_sum, uplink
+        worker_grad_sum, model_mbuf, uplink, avg_rho / num_workers
 
 
 def fl_train_(args, model, nodes, X_trains, y_trains,

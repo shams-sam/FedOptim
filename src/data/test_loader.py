@@ -5,9 +5,10 @@ from data.loader import get_loader
 
 
 datasets = [
-    'celeba', 'cifar',
-    'coco', 'voc',
-    'fmnist', 'mnist'
+    'celeba',  # regression
+    'cifar',  # classification
+    'coco', 'voc',  # semantic segmentation
+    'fmnist', 'mnist'  # classification
 ]
 test_subset = [
     'celeba', 'coco'
