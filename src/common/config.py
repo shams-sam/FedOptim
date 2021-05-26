@@ -1,6 +1,6 @@
-ckpt_dir = '/root/WorkSpace/FedOptim/ckpts'
-data_dir = '/root/WorkSpace/data'
-tb_dir = '/root/WorkSpace/FedOptim/runs'
+ckpt_dir = '/root/workspace/FedOptim/ckpts'
+data_dir = '/root/workspace/data'
+tb_dir = '/root/workspace/FedOptim/runs'
 download = False
 
 num_trains = {

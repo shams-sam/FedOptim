@@ -11,7 +11,6 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from common.approximation import get_rp_dirs
 from common.argparser import argparser
 from common.arguments import Arguments
 import common.config as cfg
@@ -124,16 +123,13 @@ for epoch in range(1, args.epochs + 1):
         output = model(data)
         loss = loss_fn(output, target)
         loss.backward()
-        if is_approx(args):
-            residuals, _ = sdirs_approximation(
-                args, model, sdirs, residuals, device)
         optimizer.step()
         gradi = add_param_list(gradi, get_model_grads(model))
         running_loss += loss.item()
         if loss_type != 'mse':
             predi = output.view(-1, output.size(1)).argmax(1, keepdim=True)
             correcti = predi.eq(target.view_as(predi)).sum().item()
-            running_acc += correcti/data.shape[0]
+            running_acc += correcti / data.shape[0]
         else:
             running_acc = running_loss
         num_minibatches += 1
@@ -143,8 +139,8 @@ for epoch in range(1, args.epochs + 1):
 
     h_grads.append(gradi)
     h_epoch.append(epoch)
-    h_acc_train.append(running_acc/num_minibatches)
-    h_loss_train.append(running_loss/num_minibatches)
+    h_acc_train.append(running_acc / num_minibatches)
+    h_loss_train.append(running_loss / num_minibatches)
 
     acc, loss = test(model, device, test_loader, loss_type)
     # for name, weight in model.named_parameters():

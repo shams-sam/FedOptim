@@ -27,8 +27,10 @@ num_classes = cfg.output_sizes[args.dataset]
 
 kwargs = {}
 
-train_loader = get_loader(args.dataset, num_train, train=True)
-test_loader = get_loader(args.dataset, num_test, train=False)
+train_loader = get_loader(args.dataset, num_train,
+                          train=True, subset=args.repeat)
+test_loader = get_loader(args.dataset, num_test,
+                         train=False, subset=args.repeat)
 
 for data, target in train_loader:
     X_train = data
@@ -39,15 +41,15 @@ for data, target in test_loader:
     y_test = target
 
 
-def repeat_data(data, repeat):
-    rep = [data for _ in range(int(repeat))]
-    rep = torch.cat(rep, dim=0)
+# def repeat_data(data, repeat):
+#     rep = [data for _ in range(int(repeat))]
+#     rep = torch.cat(rep, dim=0)
 
-    return rep
+#     return rep
 
 
-X_train, y_train = repeat_data(X_train, args.repeat), \
-    repeat_data(y_train, args.repeat)
+# X_train, y_train = repeat_data(X_train, args.repeat), \
+#     repeat_data(y_train, args.repeat)
 
 print('X_train: {}'.format(X_train.shape))
 print('y_train: {}'.format(y_train.shape))
@@ -69,23 +71,33 @@ X_tests, y_tests, _ = get_distributed_data(X_test, y_test, args.num_nodes,
                                            non_iid=args.non_iid,
                                            class_map=class_map)
 
-bincounts_train = []
-for _ in y_trains:
-    bincounts_train.append(np.bincount(_, minlength=num_classes))
+if args.non_iid:
+    bincounts_train = []
+    for _ in y_trains:
+        bincounts_train.append(np.bincount(_, minlength=num_classes))
 
-bincounts_test = []
-for _ in y_tests:
-    bincounts_test.append(np.bincount(_, minlength=num_classes))
+    bincounts_test = []
+    for _ in y_tests:
+        bincounts_test.append(np.bincount(_, minlength=num_classes))
 
-bincounts_train = np.concatenate(bincounts_train).reshape(-1, num_classes)
-bincounts_test = np.concatenate(bincounts_test).reshape(-1, num_classes)
-print("Max Train:", bincounts_train.max(axis=0))
-print("Min Train:", bincounts_train.min(axis=0))
-print("Max Test:", bincounts_test.max(axis=0))
-print("Min Test:", bincounts_test.min(axis=0))
+    bincounts_train = np.concatenate(bincounts_train).reshape(-1, num_classes)
+    bincounts_test = np.concatenate(bincounts_test).reshape(-1, num_classes)
+    print("Max Train:", bincounts_train.max(axis=0))
+    print("Min Train:", bincounts_train.min(axis=0))
+    print("Max Test:", bincounts_test.max(axis=0))
+    print("Min Test:", bincounts_test.min(axis=0))
+
+    bincounts_train = bincounts_train.sum(axis=1)
+    bincounts_test = bincounts_test.sum(axis=1)
+else:
+    bincounts_train = [len(y_train) for y_train in y_trains]
+    bincounts_test = [len(y_test) for y_test in y_tests]
+    print('Train:', bincounts_train)
+    print('Test:', bincounts_test)
+
 meta = args.__dict__
-meta['batch_size'] = int(max(bincounts_train.sum(axis=1)))
-meta['test_batch_size'] = int(max(bincounts_test.sum(axis=1)))
+meta['batch_size'] = int(max(bincounts_train))
+meta['test_batch_size'] = int(max(bincounts_test))
 print(meta)
 
 name = ['{}_{}'.format(args.dataset, args.num_nodes), 'data',

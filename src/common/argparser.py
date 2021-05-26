@@ -8,9 +8,11 @@ def argparser():
     parser.add_argument('--dataset', type=str, required=False)
     parser.add_argument('--clf', type=str, required=False)
     parser.add_argument('--optim', type=str, required=False, default='sgd')
-    parser.add_argument('--scheduler', type=booltype, required=False, default=False)
+    parser.add_argument('--scheduler', type=booltype,
+                        required=False, default=False)
     # Type of algorithm used: Stochastic, PCA, K-Grad, TopK, etc.
-    parser.add_argument('--paradigm', type=str, nargs='+', required=False, default=[])
+    parser.add_argument('--paradigm', type=str, nargs='+',
+                        required=False, default=[])
     parser.add_argument('--p-args', type=str, nargs='+', required=False)
     parser.add_argument('--ncomponent', type=int, required=False)
     parser.add_argument('--rp-eps', type=float, required=False)
@@ -18,6 +20,7 @@ def argparser():
     parser.add_argument('--sdir-full', type=booltype, required=False)
     parser.add_argument('--kgrads', type=int, required=False)
     parser.add_argument('--topk', type=float, required=False)
+    parser.add_argument('--atomo-r', type=int, required=False)
     parser.add_argument('--dga-bs', type=int, required=False)
     parser.add_argument('--num-dga', type=int, required=False)
 
@@ -31,6 +34,7 @@ def argparser():
 
     # Std Dev of Gaussian noise added to test datasets
     parser.add_argument('--noise', type=float, required=False)
+    parser.add_argument('--start-epoch', type=int, required=False, default=1)
     parser.add_argument('--epochs', type=int, required=False)
     parser.add_argument('--loss-type', type=str, required=False, default='ce')
     parser.add_argument('--lr', type=float, required=False)
@@ -66,7 +70,9 @@ def argparser():
     parser.add_argument('--patience', type=int, required=False, default=2)
     parser.add_argument('--log-intv', type=int, required=False, default=1)
     parser.add_argument('--save-model', type=booltype,
-                        required=False, default=True)
+                        required=False, default=False)
+    parser.add_argument('--load-model', type=str,
+                        required=False, default=False)
 
     args = vars(parser.parse_args())
     args = Struct(**args)

@@ -1,50 +1,47 @@
-from copy import deepcopy
 import numpy as np
-from tqdm import tqdm
+# from tqdm import tqdm
 
-from common.utils import add_gaussian_noise, is_approx
-from data.distributor import get_cluster_sizes
+from common.utils import add_gaussian_noise
 from data.loader import get_dataloader
-from models.model_op import get_model_grads, add_param_list, get_model_size,\
-    gradient_approximation, lbgm_approximation, model_update, topk_sparsify
+from models.model_op import atomo_approximation, get_model_grads, add_param_list, get_model_size,\
+    lbgm_approximation, model_update, sign_sgd_quantization, topk_sparsify
 from models.utils import forward, get_loss_fn, get_optim
 
 
-def sdirs_prepare(args, sdirs, worker_sdirs, workers, full=False):
-    num_sdirs = len(worker_sdirs)
-    num_workers = len(workers)
-    if not is_approx(args):
-        return
-
-    if full:
-        for w in workers:
-            sdirs[w] = worker_sdirs
-    elif num_sdirs > num_workers:
-        cs = np.array(get_cluster_sizes(num_sdirs, num_workers))
-        ccs = [0] + np.cumsum(cs).tolist()
-        for idx, w in zip(range(1, len(ccs)), workers):
-            sdirs[w] = worker_sdirs[ccs[idx-1]: ccs[idx]]
-    else:
-        mul = num_workers // num_sdirs
-        rem = num_workers - (num_sdirs * mul)
-        sdirsi = worker_sdirs
-        if mul > 1:
-            sdirsi = worker_sdirs * mul
-        if rem > 0:
-            sdirsi = sdirsi + worker_sdirs[:rem]
-        for sdir, w in zip(sdirsi, workers):
-            sdirs[w] = [sdir]
-
-
-def sdirs_approximation(args, node_model, sdirs, worker_residuals, device):
+def atomo(args, node_model, worker_residuals, device):
     if args.residual:
-        worker_residuals, error = gradient_approximation(
-            node_model, sdirs, device, worker_residuals)
+        num_params, worker_residuals, error = atomo_approximation(
+            args, node_model, worker_residuals, device)
     else:
-        _, error = gradient_approximation(
-            node_model, sdirs, device, [])
+        num_params, worker_residuals, error = atomo_approximation(
+            args, node_model, [], device)
 
-    return worker_residuals, error
+    return num_params, worker_residuals, error
+
+
+def lbgm(args, node_model, sdirs, worker_residuals, device):
+    if args.residual:
+        sdirs, worker_residuals, u, avg_rho = lbgm_approximation(
+            args, node_model, sdirs, worker_residuals, device)
+    else:
+        sdirs, _, u, avg_rho = lbgm_approximation(
+            args, node_model, sdirs, [], device)
+        worker_residuals = []
+
+    return sdirs, worker_residuals, u, avg_rho
+
+
+def sign_sgd(args, node_model, worker_residuals, device):
+    if args.residual:
+        uplink, worker_residuals, error = sign_sgd_quantization(
+            args, node_model, worker_residuals, device
+        )
+    else:
+        uplink, worker_residuals, error = sign_sgd_quantization(
+            args, node_model, [], device
+        )
+
+    return uplink, worker_residuals, error
 
 
 def topk(args, node_model, worker_residuals):
@@ -57,12 +54,12 @@ def topk(args, node_model, worker_residuals):
         num_topk, _, error = topk_sparsify(
             node_model, args.topk, [])
 
-    return num_topk, error
+    return num_topk, worker_residuals, error
 
 
 def worker_process(args, model, loss_fn,
                    worker_data, worker_targets, worker_num_samples,
-                   worker_mbuf, sdirs, worker_residuals, device):
+                   worker_mbuf, sdirs, worker_residuals, device, epoch):
     # mbuf: momentum buffer
 
     node_model = model.copy()
@@ -78,8 +75,10 @@ def worker_process(args, model, loss_fn,
 
     num_batches = len(dataloader)
     for batch_id, (data, target) in enumerate(dataloader):
+        if args.loss_type == 'mse':
+            target = target.float()
         loss, c = forward(node_model, data, target,
-                          opt, loss_fn, device)
+                          opt, loss_fn, device, args.loss_type)
         correct += c
         opt.zero_grad()
         loss.backward()
@@ -88,21 +87,31 @@ def worker_process(args, model, loss_fn,
         worker_grads = get_model_grads(node_model)
         # opt.step()
         worker_mbuf = model_update(node_model, worker_grads,
-                                   args, device, [])
+                                   args, device, [], epoch)
         # momentum on local updates will increase heterogeneity
+        break
 
+    error = 0
     if args.paradigm:
-        error = 0
-        if 'topk' in args.paradigm:
-            uplink, error = topk(
+
+        if 'atomo' in args.paradigm:
+            uplink, worker_residuals, error = atomo(
                 args, node_model, worker_residuals, device)
-        elif 'lbgm' in args.paradigm:
-            sdirs, worker_residuals, u, avg_rho = lbgm_approximation(
+        elif 'signsgd' in args.paradigm:
+            uplink, worker_residuals, error = sign_sgd(
+                args, node_model, worker_residuals, device)
+        elif 'topk' in args.paradigm:
+            uplink, worker_residuals, error = topk(
+                args, node_model, worker_residuals)
+        if 'lbgm' in args.paradigm:
+            sdirs, worker_residuals, u, avg_rho = lbgm(
                 args, node_model, sdirs, worker_residuals, device)
             uplink = min(u, uplink)
+            error = 1 - avg_rho
         worker_grads = get_model_grads(node_model)
 
     num_batches = len(dataloader)
+    del dataloader  # to handle the deadlocks
     if args.noise:
         worker_grads = [add_gaussian_noise(
             args, _.cpu()).to(device) for _ in worker_grads]
@@ -111,74 +120,17 @@ def worker_process(args, model, loss_fn,
 
     return node_model, worker_grads, worker_mbuf, worker_residuals, \
         total_loss / num_batches, correct / worker_num_samples, \
-        avg_rho, sdirs, uplink
+        error, sdirs, uplink
 
 
 def fl_train(args, model, nodes, X_trains, y_trains,
              device, loss_fn, worker_models,
              worker_mbufs, model_mbuf=[],
-             worker_sdirs={}, worker_residuals={}):
+             worker_sdirs={}, worker_residuals={}, epoch=0):
     # worker_mbufs: worker momentum buffer
     # model_mbuf: model momentum buffer
 
     loss_fn_ = get_loss_fn(loss_fn)
-    uplink, _ = get_model_size(model)
-
-    # uncomment the next line if model.eval() in test
-    model.train()
-
-    worker_data = {}
-    worker_targets = {}
-    worker_num_samples = {}
-    worker_losses = {}
-    worker_accs = {}
-    worker_grad_sum = 0
-
-    # send data, model to workers
-    workers = [_ for _ in nodes.keys() if 'L0' in _]
-    num_workers = len(workers)
-    for w, x, y in zip(workers, X_trains, y_trains):
-        worker_data[w] = x.send(nodes[w])
-        worker_targets[w] = y.send(nodes[w])
-        worker_num_samples[w] = x.shape[0]
-
-    # train workers
-    uplink = 0
-    avg_rho = 0
-    for w in tqdm(workers, leave=False):
-
-        # approximations in training occur in worker_process
-        node_model, node_batch_grads, worker_mbufs[w], residuals, loss, acc, \
-            rho_per_worker, worker_sdirs[w], u = worker_process(
-                args, model, loss_fn_, worker_data[w],
-                worker_targets[w], worker_num_samples[w],
-                worker_mbufs[w] if w in worker_mbufs else [],
-                worker_sdirs[w] if w in worker_sdirs else [],
-                [], device)
-        uplink += min(uplink, u)
-        avg_rho += rho_per_worker
-
-        worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
-        worker_losses[w] = loss
-        worker_accs[w] = acc
-
-    model_mbuf = model_update(
-        model, worker_grad_sum, args, device, model_mbuf)
-
-    loss = np.array([_ for dump, _ in worker_losses.items()])
-    acc = np.array([_ for dump, _ in worker_accs.items()])
-    loss_mean, loss_std = loss.mean(), loss.std()
-    acc_mean, acc_std = acc.mean(), acc.std()
-
-    return loss_mean, loss_std, acc_mean, acc_std, \
-        worker_grad_sum, model_mbuf, uplink, avg_rho / num_workers
-
-
-def fl_train_(args, model, nodes, X_trains, y_trains,
-             device, loss_fn, worker_models,
-             worker_sdirs, sdirs, worker_residuals):
-    loss_fn_ = get_loss_fn(loss_fn)
-    uplink, _ = get_model_size(model)
 
     # uncomment the next line if model.eval() in test
     # model.train()
@@ -192,44 +144,39 @@ def fl_train_(args, model, nodes, X_trains, y_trains,
 
     # send data, model to workers
     workers = [_ for _ in nodes.keys() if 'L0' in _]
+    num_workers = len(workers)
     for w, x, y in zip(workers, X_trains, y_trains):
         worker_data[w] = x.send(nodes[w])
         worker_targets[w] = y.send(nodes[w])
         worker_num_samples[w] = x.shape[0]
 
-    num_workers = len(workers)
-    if is_approx(args) and len(worker_sdirs):
-        if 'kgrad' in args.paradigm and len(worker_sdirs) < args.kgrads:
-            sdirs = {}
-        else:
-            sdirs_prepare(args, sdirs, worker_sdirs, workers, args.sdir_full)
-
-    cumm_error = 0
     # train workers
+    uplink, _ = get_model_size(model)
+    avg_error = 0
+    total_uplink = 0
+
+    # for w in tqdm(workers, leave=False): # use if progressbar needed
     for w in workers:
+
         # approximations in training occur in worker_process
-        node_model, node_batch_grads, residuals, loss, acc, \
-            error_per_worker, u = worker_process(
+        node_model, node_batch_grads, worker_mbufs[w], worker_residuals[w], loss, acc, \
+            error_per_worker, worker_sdirs[w], u = worker_process(
                 args, model, loss_fn_, worker_data[w],
                 worker_targets[w], worker_num_samples[w],
-                sdirs[w] if w in sdirs else [],
+                worker_mbufs[w] if w in worker_mbufs else [],
+                worker_sdirs[w] if w in worker_sdirs else [],
                 worker_residuals[w] if w in worker_residuals else [],
-                device)
-        worker_residuals[w] = residuals
-        uplink = min(uplink, u)
-        # worker_models[w] = node_model.send(nodes[w])
+                device, epoch)
+        total_uplink += min(uplink, u)
+        avg_error += error_per_worker
+
         worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
         worker_losses[w] = loss
         worker_accs[w] = acc
-        cumm_error += error_per_worker
 
-    cumm_error /= num_workers
-    model_update(model, worker_grad_sum, args.lr)
-
-    if args.paradigm and \
-       'kgrad' in args.paradigm and \
-       len(worker_sdirs) < args.kgrads:
-        worker_sdirs.append(worker_grad_sum)
+    uplink = min(uplink, total_uplink / num_workers)
+    model_mbuf = model_update(
+        model, worker_grad_sum, args, device, model_mbuf, epoch)
 
     loss = np.array([_ for dump, _ in worker_losses.items()])
     acc = np.array([_ for dump, _ in worker_accs.items()])
@@ -237,8 +184,7 @@ def fl_train_(args, model, nodes, X_trains, y_trains,
     acc_mean, acc_std = acc.mean(), acc.std()
 
     return loss_mean, loss_std, acc_mean, acc_std, \
-        worker_grad_sum, u, \
-        sdirs, worker_residuals, cumm_error
+        worker_grad_sum, model_mbuf, uplink, avg_error / num_workers
 
 
 def test(model, device, test_loader, loss_fn):
@@ -246,7 +192,7 @@ def test(model, device, test_loader, loss_fn):
     # eval creates issue for models with batch normalization issue
     # pytorch issue discussed here:
     # https://discuss.pytorch.org/t/model-eval-gives-incorrect-loss-for-model-with-batchnorm-layers/7561/45
-    model.eval()
+    # model.eval()
     num_minibatches = 0
     running_loss = 0.0
     running_acc = 0.0
@@ -257,7 +203,8 @@ def test(model, device, test_loader, loss_fn):
 
         running_loss += loss_fn_(output, target).item()
         if loss_fn != 'mse':
-            pred = output.view(-1, output.size(1)).argmax(1, keepdim=True) # output.argmax(1, keepdim=True)
+            # output.argmax(1, keepdim=True)
+            pred = output.view(-1, output.size(1)).argmax(1, keepdim=True)
             correcti = pred.eq(target.view_as(pred)).sum().item()
             running_acc += correcti/data.shape[0]
         else:

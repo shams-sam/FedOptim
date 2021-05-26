@@ -19,6 +19,7 @@ class Arguments():
         self.sdir_full = args.sdir_full
         self.kgrads = args.kgrads
         self.topk = args.topk
+        self.atomo_r = args.atomo_r
         self.dga_bs = args.dga_bs
         self.num_dga = args.num_dga
         self.residual = args.residual
@@ -44,6 +45,7 @@ class Arguments():
             self.test_batch_size = self.num_test
         self.noise = args.noise
         self.epochs = args.epochs
+        self.start_epoch = args.start_epoch
         self.loss_type = args.loss_type
         self.lr = args.lr
         self.nesterov = args.nesterov
@@ -56,6 +58,7 @@ class Arguments():
         # logging config
         self.log_intv = args.log_intv
         self.save_model = args.save_model
+        self.load_model = args.load_model
         self.early_stopping = args.early_stopping
         self.patience = args.patience
         # dry run

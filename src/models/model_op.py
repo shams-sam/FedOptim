@@ -1,4 +1,5 @@
 from collections import defaultdict
+import numpy as np
 import torch
 
 
@@ -65,6 +66,50 @@ def add_param_dict(param1, param2):
         param1[key] += val
 
     return param1
+
+
+def low_rank_approrximation(mat, r, device):
+    u, s, v = torch.svd(mat)
+    matr = torch.zeros(len(u), len(v)).to(device)
+    for i in range(r):
+        if u.size(0) < v.size(0):
+            matr += s[i]*(u[i].view(-1, 1).mm(v.T[i].view(1, -1)))
+        else:
+            matr += s[i]*(u.T[i].view(-1, 1).mm(v[i].view(1, -1)))
+
+    return matr
+
+
+def atomo_approximation(args, model, residuals, device):
+    accum_res = []
+    accum_error = 0.0
+    total_param = 0.0
+    for i, p in enumerate(model.parameters()):
+        size = p.size()
+        maxd = max(size)
+        grad_2d = p.grad.clone().reshape(size[0], -1)
+        res_2d = residuals[i] if len(residuals) else \
+            torch.zeros_like(grad_2d)
+        grad_2d += res_2d
+        # if len(size) == 1:
+        #     n = max(size) // 2
+        #     grad_2d = grad_2d.reshape(n, 2)
+        # if len(size) > 2:
+        #     grad_2d = grad_2d.reshape(size[0], size[1], -1)
+        #     grad_2d = grad_2d.reshape(size[0] * size[1], -1)
+        #     tmp_size = grad_2d.size()
+        #     grad_2d = grad_2d.reshape(tmp_size[0]//2, tmp_size[1]*2)
+        if len(size) == 2:
+            total_param += args.atomo_r * (grad_2d.size(0) + grad_2d.size(1))
+            grad_lr = low_rank_approrximation(grad_2d, args.atomo_r, device)
+            accum_res.append((grad_2d - grad_lr).reshape(size))
+            accum_error += torch.norm(accum_res[-1]) / torch.norm(grad_2d)
+            p.grad.copy_(grad_lr.reshape(size))
+        else:
+            total_param += grad_2d.size(0)
+            accum_res.append(res_2d)
+
+    return total_param, accum_res, accum_error.item() / (i + 1)
 
 
 def get_param_list_sum(tensors):
@@ -139,6 +184,11 @@ def get_model_weights(model, scaling_factor=1):
         return weights
 
 
+def get_scheduled_lr(args, epoch):
+    epoch = epoch // 15
+    return 0 + 0.5 * (args.lr - 0) * (1 + np.cos(epoch * np.pi / args.epochs))
+
+
 def gradient_approximation(model, sdirs, device, residuals):
     true_grads = []
     idx = 0
@@ -177,7 +227,8 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
     for i, p in enumerate(model.parameters()):
         size = p.grad.size()
         grad_flat = p.grad.clone().flatten()
-        grad_res = residuals[i] if len(residuals) else torch.zeros_like(grad_flat)
+        grad_res = residuals[i] if len(
+            residuals) else torch.zeros_like(grad_flat)
         grad_flat = grad_flat + grad_res
 
         if len(lbgs):
@@ -202,29 +253,6 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
     return accum_lbgs, accum_residuals, uplink, accum_rho / (i + 1)
 
 
-def block_gradient_approximation(model, sdirs, device, residuals):
-    residuals = []
-    true_grads = []
-    error_norm = 0
-    num_layers = 0
-    idx = 0
-    for p, s in zip(model.parameters(), sdirs):
-        s = s.to(device)
-        num_layers += 1
-        idx += 1
-        if len(residuals) > idx:
-            true_grad = p.grad.clone().flatten() + residuals[idx]
-        else:
-            true_grad = p.grad.clone().flatten()
-        approx_grad = s.T.mm(s).mm(true_grad.reshape(-1,1))
-
-        residuals.append(true_grad-approx_grad)
-        error_norm += torch.norm(residuals[-1]).item()/torch.norm(true_grad).item()        
-        p.grad.copy_(approx_grad.reshape(p.size()))
-        
-    return residuals, error_norm/num_layers
-
-
 def load_model_grad(model, grads):
     for param, g in zip(model.parameters(), grads):
         param.grad = g
@@ -243,12 +271,12 @@ def momentum_grad(prev_v, grad, momentum, device):
     return momentum * prev_v.to(device) + grad
 
 
-def model_update(model, grads, args, device, prev_v=[]):
+def model_update(model, grads, args, device, prev_v=[], epoch=0):
     idx = 0
     accum_v = []
     for param in model.parameters():
         d = grads[idx]
-        
+
         if args.momentum:
             if len(prev_v):
                 d = args.momentum * prev_v[idx] + d
@@ -257,6 +285,8 @@ def model_update(model, grads, args, device, prev_v=[]):
                 accum_v.append(d)
 
         with torch.no_grad():
+            lr = args.lr if not args.scheduler else get_scheduled_lr(
+                args, epoch)
             param.copy_(param.add(-args.lr, d.to(device)))
         idx += 1
     return accum_v
@@ -276,6 +306,26 @@ def scale_model_weights(weights, factor):
         weights[key] = val*factor
 
     return weights
+
+
+def sign_sgd_quantization(args, model, residuals, device):
+    accum_res = []
+    accum_error = 0.0
+    uplink = 0.0
+    for i, p in enumerate(model.parameters()):
+        size = p.size()
+        grad = p.grad.clone()
+        res = residuals[i] if len(residuals) else torch.zeros_like(p)
+        grad += res
+        grad_sign = torch.where(grad >= 0,
+                                torch.ones(grad.size()).to(device),
+                                -1*torch.ones(grad.size()).to(device))
+        accum_res.append(grad - grad_sign)
+        accum_error += torch.norm(accum_res[-1]) / torch.norm(grad)
+        p.grad.copy_(grad_sign)
+        uplink += grad_sign.view(-1).shape[0]
+
+    return uplink, accum_res, accum_error.item() / (i + 1)
 
 
 def topk_sparsify(model, k, residuals):
@@ -305,7 +355,7 @@ def topk_sparsify(model, k, residuals):
         param.grad = grad
         idx += 1
 
-    return num_selected, residuals_tmp, error_norm/idx
+    return num_selected, residuals_tmp, error_norm / idx
 
 
 def ein_normal(param):

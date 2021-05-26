@@ -83,12 +83,16 @@ def get_paths(args):
     if args.noise:
         model_name += '_noise_{}'.format(args.noise)
     if args.paradigm:
+        if 'atomo' in args.paradigm:
+            model_name += '_atomo_{}'.format(args.atomo_r)
+        if 'signsgd' in args.paradigm:
+            model_name += '_signsgd'
         if 'topk' in args.paradigm:
             model_name += '_topk_{}'.format(args.topk)
         if 'pca' in args.paradigm:
             model_name += '_pca_{}'.format(pca_)
-        if 'dga' in args.paradigm:
-            model_name += '_{}'.format(dga_)
+        if 'lbgm' in args.paradigm:
+            model_name += '_lbgm_{}'.format(args.error_tol)
         elif 'rp' in args.paradigm:
             model_name += '_rp_{}'.format(
                 args.rp_eps if not args.ncomponent else args.ncomponent)
@@ -99,6 +103,8 @@ def get_paths(args):
             model_name += '_residual'
         if args.sdir_full:
             model_name += '_full'
+    if args.start_epoch != 1:
+        model_name += '_start_from_{}'.format(args.start_epoch)
 
     path['model_name'] = model_name
     path['log_file'] = '{}/{}/logs/{}.log'.format(
@@ -131,11 +137,14 @@ def in_range(elem, upper, lower):
     return (elem >= lower) and (elem <= upper)
 
 
-def init_logger(log_file, dry_run=False):
+def init_logger(log_file, dry_run, append):
     print("Logging: ", log_file)
     std_out = sys.stdout
     if not dry_run:
-        log_file = open(log_file, 'w')
+        log_file = open(
+            log_file,
+            'a' if os.path.exists(log_file) and append else 'w'
+        )
         sys.stdout = log_file
 
     return log_file, std_out

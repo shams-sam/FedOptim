@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -13,13 +14,16 @@ from models.unet import UNet
 from models.vgg import VGG
 
 
-def forward(model, data, target, opt, loss_fn, device):
+def forward(model, data, target, opt, loss_fn, device, loss_type):
     data, target = data.to(device), target.to(device)
     opt.zero_grad()
     output = model(data)
-    pred = output.argmax(1, keepdim=True)
-    correct = pred.eq(target.view_as(pred)).sum().item()
     loss = loss_fn(output, target)
+    if loss_type != 'mse':
+        pred = output.argmax(1, keepdim=True)
+        correct = pred.eq(target.view_as(pred)).sum().item()
+    else:
+        correct = 0
 
     return loss, correct
 

@@ -62,10 +62,10 @@ def get_distributed_data(X_train, y_train, num_parts,
 
     X_trains = []
     y_trains = []
-    if non_iid == num_classes and uniform:
+    if (non_iid == num_classes or not non_iid) and uniform:
         for i in range(num_parts-1):
             test_size = 1/(num_parts-i)
-            if stratify:
+            if stratify and non_iid:
                 X_train, X_iter, y_train, y_iter = train_test_split(
                     X_train, y_train, stratify=y_train, test_size=test_size)
             else:

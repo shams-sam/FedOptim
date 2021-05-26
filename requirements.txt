@@ -11,6 +11,7 @@ pycocotools
 PyMySql
 seaborn
 sqlalchemy
+torch==1.4.0
 syft==0.2.9
 terminaltables
 torchsummary

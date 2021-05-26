@@ -5,14 +5,14 @@ import shutil
 import sys
 
 import syft as sy
+import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from common.approximation import get_sdirs
 from common.argparser import argparser
 from common.arguments import Arguments
-from common.utils import get_device, get_paths, init_logger, \
-    tb_model_summary
+from common.utils import get_device, get_paths, init_logger
 from data.distributor import get_fl_graph
 from data.loader import get_loader
 from models.train import fl_train, test
@@ -30,7 +30,8 @@ args = Arguments(argparser())
 hook = sy.TorchHook(torch)
 device = get_device(args)
 paths = get_paths(args)
-log_file, std_out = init_logger(paths.log_file, args.dry_run)
+log_file, std_out = init_logger(
+    paths.log_file, args.dry_run, args.load_model)
 if os.path.exists(paths.tb_path):
     shutil.rmtree(paths.tb_path)
 tb = SummaryWriter(paths.tb_path)
@@ -47,6 +48,7 @@ _, workers = get_fl_graph(hook, args.num_workers)
 print('Loading data: {}'.format(paths.data_path))
 X_trains, _, y_trains, _, meta = pkl.load(open(paths.data_path, 'rb'))
 
+
 test_loader = get_loader(args.dataset,
                          args.test_batch_size,
                          train=False,
@@ -58,7 +60,7 @@ print('+' * 80)
 # Fire the engines
 # ------------------------------------------------------------------------------
 
-model, loss_type = get_model(args)
+model, loss_type = get_model(args, ckpt_path=args.load_model)
 if args.batch_size == 0:
     args.batch_size = int(meta['batch_size'])
     print("Resetting batch size: {}...".format(args.batch_size))
@@ -107,13 +109,16 @@ print('+' * 80)
 print('Training w/ optim:{} and paradigm {}'.format(
     args.optim, ','.join(args.paradigm) if args.paradigm else 'NA'))
 print('epoch \t tr loss (acc) (mean+-std) \t test loss (acc) \t lbgm+-std')
-for epoch in range(1, args.epochs + 1):
+for epoch in range(args.start_epoch, args.epochs):
     h_epoch.append(epoch)
+
     train_loss, train_loss_std, train_acc, train_acc_std, \
-        worker_grad_sum, model_mbuf, uplink, avg_rho = fl_train(
+        worker_grad_sum, model_mbuf, uplink, avg_error = fl_train(
             args, model, workers, X_trains, y_trains,
             device, loss_type, worker_models,
-            worker_mbufs, model_mbuf, worker_sdirs, worker_residuals)
+            worker_mbufs, model_mbuf, worker_sdirs, worker_residuals,
+            0 if not args.scheduler else epoch-1,
+        )
 
     h_acc_train.append(train_acc)
     h_acc_train_std.append(train_acc_std)
@@ -121,7 +126,7 @@ for epoch in range(1, args.epochs + 1):
     h_loss_train_std.append(train_loss_std)
     h_uplink.append(uplink)
     h_grad_agg.append(worker_grad_sum)
-    h_error.append(1-avg_rho)
+    h_error.append(avg_error)
 
     acc, loss = test(model, device, test_loader, loss_type)
     h_acc_test.append(acc)
@@ -141,9 +146,9 @@ for epoch in range(1, args.epochs + 1):
         wait += 1
 
     if epoch % args.log_intv == 0:
-        print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) \t {:.4f} '.format(
-                  epoch, train_loss, train_loss_std, train_acc, train_acc_std,
-                  loss, acc, avg_rho))
+        print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) \t {:.4f} \t {}'.format(
+            epoch, train_loss, train_loss_std, train_acc, train_acc_std,
+            loss, acc, avg_error, uplink))
         tb.flush()
 
     if wait > args.patience:

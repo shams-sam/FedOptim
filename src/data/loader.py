@@ -60,7 +60,10 @@ def get_dataloader(data, targets, batchsize, shuffle=False):
 def get_loader(dataset, batch_size, train=True,
                shuffle=True, subset=1.0, force_resize=0,
                noise=False, permutation=False):
-    kwargs = {'num_workers': 8}
+    kwargs = {
+        # 'num_workers': 1,
+        # 'pin_memory': False,
+    }
     if dataset == 'amazon':
         train = 'train' if train else 'valid'
         dataset = load_dataset('amazon_reviews_multi', 'en',
