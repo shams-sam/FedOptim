@@ -36,6 +36,7 @@ def argparser():
     parser.add_argument('--noise', type=float, required=False)
     parser.add_argument('--start-epoch', type=int, required=False, default=1)
     parser.add_argument('--epochs', type=int, required=False)
+    parser.add_argument('--tau', type=int, required=False, default=2)
     parser.add_argument('--loss-type', type=str, required=False, default='ce')
     parser.add_argument('--lr', type=float, required=False)
     parser.add_argument('--nesterov', type=booltype,

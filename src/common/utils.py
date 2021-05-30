@@ -52,7 +52,7 @@ def get_device(args):
         args.device_id[0]) if USE_CUDA else "cpu")
 
 
-def get_paths(args):
+def get_paths(args, distributed=False):
     ckpt_path = cfg.ckpt_dir
     tb_path = cfg.tb_dir
     if args.num_workers:
@@ -105,6 +105,8 @@ def get_paths(args):
             model_name += '_full'
     if args.start_epoch != 1:
         model_name += '_start_from_{}'.format(args.start_epoch)
+    if distributed:
+        model_name += '_distributed'
 
     path['model_name'] = model_name
     path['log_file'] = '{}/{}/logs/{}.log'.format(

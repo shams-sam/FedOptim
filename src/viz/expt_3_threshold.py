@@ -20,6 +20,8 @@ ap.add_argument("--m-int", required=True, type=float, nargs='+')  # multiplier
 ap.add_argument("--m-str", required=True, type=str, nargs='+')
 ap.add_argument("--u-int", required=True, type=float, nargs='+')  # multiplier
 ap.add_argument("--u-str", required=True, type=str, nargs='+')
+ap.add_argument("--ylim1", required=True, type=float, nargs='+')
+ap.add_argument("--ylim2", required=True, type=int, nargs='+')
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
@@ -34,12 +36,14 @@ m_int = args['m_int']
 m_str = args['m_str']
 u_int = args['u_int']
 u_str = args['u_str']
+ylim1 = args['ylim1']
+ylim2 = args['ylim2']
 final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
 models = args['models']
 labels = args['labels']
-colors = ['k', 'r', 'g', 'b', 'y']
+colors = ['k', 'r', 'g', 'b', 'y', 'c']
 
 
 groups = [histories[bp[i - 1]: bp[i]] for i in range(1, len(bp))]
@@ -84,27 +88,27 @@ for j, group in enumerate(groups):
             if m_str != 'na':
                 ylabel = r'{} ($\times {}$)'.format(ylabel, m_str[j])
             ax2.set_ylabel(ylabel, fontsize=30)
-    ax1.set_title(models[j].replace(":", "\n"), fontsize=30)
-    ax2.set_xlabel('epoch', fontsize=30)
-    ax1.set_xticks(list(range(0, n_epochs, n_epochs // 4)))
+    ax1.set_title(models[j].replace(":", "\n"), fontsize=30, pad=20)
+    ax2.set_xlabel('t', fontsize=30)
+    ax1.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
     # ax1.set_xticklabels([])
-    ax2.set_xticks(list(range(0, n_epochs, n_epochs // 4)))
+    ax2.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
     ax1.grid()
     ax2.grid()
-    # ax1.set_xlim(0, n_epochs - 1)
-    # ax2.set_xlim(0, n_epochs - 1)
-    # ax1.set_ylim(0, ylim1[j])
-    # ax2.set_ylim(0, ylim2[j])
+    ax1.set_xlim(0, n_epochs)
+    ax2.set_xlim(0, n_epochs)
+    ax1.set_ylim(0, ylim1[j])
+    ax2.set_ylim(0, ylim2[j])
     if plot_idx != 2:
         continue
 
     labs = [lab.get_label() for lab in lns]
-    ax1.legend(lns, labs, loc=2, fontsize=25,
-               ncol=5, bbox_to_anchor=(-0.05, 1.15, 9.3, 0.6),
-               mode='expand', frameon=True
+    ax1.legend(lns, labs, loc=2, fontsize=30,
+               ncol=3, bbox_to_anchor=(-0.05, 1.15, 5.2, 1.0),
+               mode='expand', frameon=False
                )
 
-plt.subplots_adjust(hspace=0.25, wspace=0.37)
+plt.subplots_adjust(hspace=0.25, wspace=0.35)
 if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:

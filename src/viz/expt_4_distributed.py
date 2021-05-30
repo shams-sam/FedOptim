@@ -88,7 +88,7 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
             mse_flag = True
         ax1.set_ylabel(ylabel, fontsize=30)
         if plot_idx == 2:
-            ylabel = 'agg. #params\n shared'
+            ylabel = 'agg. #bits\n shared'
             if m_str != 'na':
                 ylabel = r'{} ($\times {}$)'.format(ylabel, m_str[j])
             ax2.set_ylabel(ylabel, fontsize=30)

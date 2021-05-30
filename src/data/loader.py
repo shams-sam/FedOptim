@@ -181,6 +181,25 @@ def get_loader(dataset, batch_size, train=True,
                            download=cfg.download,
                            transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif dataset == 'svhn':
+        train = 'train' if train else 'test'
+        params = {
+            'mean': (0.4377, 0.4438, 0.4728),
+            'std': (0.1980, 0.2010, 0.1970),
+        }
+        if force_resize:
+            params['im_size'] = force_resize
+        if noise:
+            params['noise'] = noise
+        if permutation:
+            params['permutation'] = permutation
+        transform = _get_transform(params)
+
+        loader = torch.utils.data.DataLoader(
+            datasets.SVHN('{}/SVHN'.format(cfg.data_dir), split=train,
+                          download=cfg.download,
+                          transform=transform),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'voc':
         train = 'train' if train else 'val'
         params = {

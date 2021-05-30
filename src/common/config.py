@@ -9,6 +9,7 @@ num_trains = {
     'coco': 59144,  # total 118287
     'fmnist': 60000,
     'mnist': 60000,
+    'svhn': 73257,
     'voc': 1464,
 }
 
@@ -18,6 +19,7 @@ num_tests = {
     'coco': 5000,  # total 5000
     'fmnist': 10000,
     'mnist': 10000,
+    'svhn': 26032,
     'voc': 1449,
 }
 
@@ -27,6 +29,7 @@ input_sizes = {
     'coco': 3*32*32,
     'fmnist': 28*28,
     'mnist': 28*28,
+    'svhn': 3*32*32,
     'voc': 3*32*32,
 }
 
@@ -36,6 +39,7 @@ output_sizes = {
     'coco': 2,
     'fmnist': 10,
     'mnist': 10,
+    'svhn': 10,
     'voc': 22,
 }
 
@@ -45,6 +49,7 @@ num_channels = {
     'coco': 3,
     'fmnist': 1,
     'mnist': 1,
+    'svhn': 3,
     'voc': 3,
 }
 
@@ -54,6 +59,7 @@ cnn_view = {
     'coco': 5*5*50,
     'fmnist': 4*4*50,
     'mnist': 4*4*50,
+    'svhn': 5*5*50,
     'voc': 5*5*50,
 }
 

@@ -45,6 +45,7 @@ class Arguments():
             self.test_batch_size = self.num_test
         self.noise = args.noise
         self.epochs = args.epochs
+        self.tau = args.tau
         self.start_epoch = args.start_epoch
         self.loss_type = args.loss_type
         self.lr = args.lr

@@ -1,5 +1,6 @@
 from collections import defaultdict
 import numpy as np
+from sklearn.decomposition import TruncatedSVD
 import torch
 
 
@@ -68,6 +69,11 @@ def add_param_dict(param1, param2):
     return param1
 
 
+def set_model_grads(model, grads):
+    for i, p in enumerate(model.parameters()):
+        p.grad.copy_(grads[i].clone())
+
+
 def low_rank_approrximation(mat, r, device):
     u, s, v = torch.svd(mat)
     matr = torch.zeros(len(u), len(v)).to(device)
@@ -80,34 +86,35 @@ def low_rank_approrximation(mat, r, device):
     return matr
 
 
+def truncated_svd_approrximation(mat, r, device):
+    mat = mat.cpu().numpy()
+    svd = TruncatedSVD(n_components=r)
+    mat = svd.fit_transform(mat)
+    mat = svd.inverse_transform(mat)
+    mat = torch.Tensor(mat).to(device)
+
+    return mat
+
+
 def atomo_approximation(args, model, residuals, device):
     accum_res = []
     accum_error = 0.0
     total_param = 0.0
     for i, p in enumerate(model.parameters()):
         size = p.size()
-        maxd = max(size)
-        grad_2d = p.grad.clone().reshape(size[0], -1)
-        res_2d = residuals[i] if len(residuals) else \
-            torch.zeros_like(grad_2d)
-        grad_2d += res_2d
-        # if len(size) == 1:
-        #     n = max(size) // 2
-        #     grad_2d = grad_2d.reshape(n, 2)
-        # if len(size) > 2:
-        #     grad_2d = grad_2d.reshape(size[0], size[1], -1)
-        #     grad_2d = grad_2d.reshape(size[0] * size[1], -1)
-        #     tmp_size = grad_2d.size()
-        #     grad_2d = grad_2d.reshape(tmp_size[0]//2, tmp_size[1]*2)
-        if len(size) == 2:
-            total_param += args.atomo_r * (grad_2d.size(0) + grad_2d.size(1))
-            grad_lr = low_rank_approrximation(grad_2d, args.atomo_r, device)
-            accum_res.append((grad_2d - grad_lr).reshape(size))
-            accum_error += torch.norm(accum_res[-1]) / torch.norm(grad_2d)
-            p.grad.copy_(grad_lr.reshape(size))
-        else:
-            total_param += grad_2d.size(0)
-            accum_res.append(res_2d)
+        if p.ndim <= 1 or (p.ndim == 2 and min(size) == 1):
+            total_param += max(size)
+            continue
+        grad2d = p.grad.clone().reshape(size[0], -1)
+        rank = min(*list(grad2d.size()), args.atomo_r)
+        # res_2d = residuals[i] if len(residuals) else \
+        #     torch.zeros_like(grad_2d)
+        # grad_2d += res_2d
+        total_param += rank * sum(grad2d.size())
+        grad_lr = truncated_svd_approrximation(grad2d, rank, device)
+        accum_res.append((grad2d - grad_lr).reshape(size))
+        accum_error += torch.norm(accum_res[-1]) / torch.norm(grad2d)
+        p.grad.copy_(grad_lr.reshape(size))
 
     return total_param, accum_res, accum_error.item() / (i + 1)
 
@@ -124,8 +131,11 @@ def calc_projection(a, b, device):
     # projection of vector a on vector b
     a = a.clone().to(device)
     b = b.clone().to(device)
+    p = (torch.dot(a, b) / torch.dot(b, b)).item()
+    if p < 0.0 or p > 1.0:
+        p = 0.0
 
-    return (torch.dot(a, b) / torch.dot(b, b)).item()
+    return p
 
 
 def get_layer_size(model, flatten=True):
@@ -232,7 +242,8 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
         grad_flat = grad_flat + grad_res
 
         if len(lbgs):
-            rho = calc_projection(grad_flat, lbgs[i], device)
+            rho = calc_projection(
+                grad_flat, lbgs[i], device)
         else:
             rho = 0.0
 
@@ -299,6 +310,20 @@ def norm(weight):
 def perturb_model(model, epoch, device):
     for p in model.parameters():
         p = p + torch.normal(0.0, 1/epoch, size=p.size()).to(device)
+
+
+def powersgd_approximation(args, model, residuals, rank, device):
+
+    uplink = 0.0
+    for i, p in enumerate(model.parameters()):
+        size = p.size()
+        if p.ndim <= 1:  # powersgd skips 1d tensors
+            uplink += sum(size)
+            continue
+        grad2d = p.grad.clone().reshape(size[0], -1)
+        size2d = grad2d.size()
+        r = min(*list(size2d), rank)
+        uplink += r * sum(size2d)
 
 
 def scale_model_weights(weights, factor):

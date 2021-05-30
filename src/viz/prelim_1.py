@@ -15,7 +15,7 @@ matplotlib.rcParams['lines.markersize'] = 7
 ap = argparse.ArgumentParser()
 ap.add_argument("--h", required=True, type=str, nargs='+')
 ap.add_argument("--loss-type", required=True, type=str, nargs='+')
-ap.add_argument("--ylim1", required=True, type=int, nargs='+')
+ap.add_argument("--ylim1", required=True, type=, nargs='+')
 ap.add_argument("--ylim2", required=True, type=int, nargs='+')
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)

@@ -13,7 +13,7 @@ from common.arguments import Arguments
 from common.utils import get_device, get_paths, init_logger
 from data.distributor import get_fl_graph
 from data.loader import get_loader
-from models.train import fl_train, test
+from models.train import distributed_train, test
 from models.utils import get_model
 from viz.training_plots import training_plots
 
@@ -27,7 +27,7 @@ torch.set_printoptions(linewidth=120)
 args = Arguments(argparser())
 hook = sy.TorchHook(torch)
 device = get_device(args)
-paths = get_paths(args)
+paths = get_paths(args, distributed=True)
 log_file, std_out = init_logger(
     paths.log_file, args.dry_run, args.load_model)
 if os.path.exists(paths.tb_path):
@@ -106,12 +106,12 @@ prev_error = 0
 print('+' * 80)
 print('Training w/ optim:{} and paradigm {}'.format(
     args.optim, ','.join(args.paradigm) if args.paradigm else 'NA'))
-print('epoch \t tr loss (acc) (mean+-std) \t test loss (acc) \t lbgm+-std')
+print('epoch \t tr loss (acc) \t test loss (acc) \t lbgm+-std')
 for epoch in range(args.start_epoch, args.epochs):
     h_epoch.append(epoch)
 
-    train_loss, train_loss_std, train_acc, train_acc_std, \
-        worker_grad_sum, model_mbuf, uplink, avg_error = fl_train(
+    train_loss, train_acc, \
+        worker_grad_sum, model_mbuf, uplink, avg_error = distributed_train(
             args, model, workers, X_trains, y_trains,
             device, loss_type, worker_models,
             worker_mbufs, model_mbuf, worker_sdirs, worker_residuals,
@@ -119,9 +119,7 @@ for epoch in range(args.start_epoch, args.epochs):
         )
 
     h_acc_train.append(train_acc)
-    h_acc_train_std.append(train_acc_std)
     h_loss_train.append(train_loss)
-    h_loss_train_std.append(train_loss_std)
     h_uplink.append(uplink)
     h_grad_agg.append(worker_grad_sum)
     h_error.append(avg_error)
@@ -144,8 +142,8 @@ for epoch in range(args.start_epoch, args.epochs):
         wait += 1
 
     if epoch % args.log_intv == 0:
-        print('{} \t {:.2f}+-{:.2f} ({:.2f}+-{:.2f}) \t {:.5f} ({:.4f}) \t {:.4f} \t {}'.format(
-            epoch, train_loss, train_loss_std, train_acc, train_acc_std,
+        print('{} \t {:.2f} ({:.2f}) \t {:.5f} ({:.4f}) \t {:.4f} \t {}'.format(
+            epoch, train_loss, train_acc,
             loss, acc, avg_error, uplink))
         tb.flush()
 
@@ -170,23 +168,23 @@ pkl.dump((h_epoch, h_acc_test, h_acc_train, h_acc_train_std, h_loss_test,
          open(paths.hist_path, 'wb'))
 print('Saved: ', paths.hist_path)
 
-training_plots(
-    {
-        'h_epoch': h_epoch,
-        'h_acc_test': h_acc_test,
-        'h_acc_train': h_acc_train,
-        'h_acc_train_std': h_acc_train_std,
-        'h_loss_test': h_loss_test,
-        'h_loss_train': h_loss_train,
-        'h_loss_train_std': h_loss_train_std,
-        'h_uplink': h_uplink,
-        'h_grad': h_grad_agg,
-        'h_error': h_error,
-    }, args, loss_type, paths.plot_path)
+# training_plots(
+#     {
+#         'h_epoch': h_epoch,
+#         'h_acc_test': h_acc_test,
+#         'h_acc_train': h_acc_train,
+#         'h_acc_train_std': h_acc_train_std,
+#         'h_loss_test': h_loss_test,
+#         'h_loss_train': h_loss_train,
+#         'h_loss_train_std': h_loss_train_std,
+#         'h_uplink': h_uplink,
+#         'h_grad': h_grad_agg,
+#         'h_error': h_error,
+#     }, args, loss_type, paths.plot_path)
 
 if args.dry_run:
-    print("Remove: ", paths.plot_path)
-    os.remove(paths.plot_path)
+    # print("Remove: ", paths.plot_path)
+    # os.remove(paths.plot_path)
     print("Remove: ", paths.hist_path)
     os.remove(paths.hist_path)
 
