@@ -22,6 +22,10 @@ ap.add_argument("--u-int", required=True, type=float, nargs='+')  # multiplier
 ap.add_argument("--u-str", required=True, type=str, nargs='+')
 ap.add_argument("--ylim1", required=True, type=float, nargs='+')
 ap.add_argument("--ylim2", required=True, type=int, nargs='+')
+ap.add_argument("--wspace", required=False, type=float, default=0.35)
+ap.add_argument("--ncol", required=False, type=int, default=3)
+ap.add_argument("--leg-w", required=False, type=float, default=5.2)
+ap.add_argument("--leg-h", required=False, type=float, default=1.0)
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
@@ -38,6 +42,10 @@ u_int = args['u_int']
 u_str = args['u_str']
 ylim1 = args['ylim1']
 ylim2 = args['ylim2']
+wspace = args['wspace']
+ncol = args['ncol']
+leg_w = args['leg_w']
+leg_h = args['leg_h']
 final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
@@ -58,10 +66,12 @@ for j, group in enumerate(groups):
     ylabel = 'MSE loss' if loss_types[j] == 'mse' else 'accuracy'
     lns = None
     for i, h in enumerate(group):
+        print(h)
+        if h == 'na':
+            continue
 
         if dry_run:
             assert os.path.exists(h)
-            print(h)
             continue
 
         b_ep, b_acc, _, _, b_loss, _, _, b_up, _ = pkl.load(open(h, 'rb'))
@@ -88,6 +98,9 @@ for j, group in enumerate(groups):
             if m_str != 'na':
                 ylabel = r'{} ($\times {}$)'.format(ylabel, m_str[j])
             ax2.set_ylabel(ylabel, fontsize=30)
+
+    if dry_run:
+        continue
     ax1.set_title(models[j].replace(":", "\n"), fontsize=30, pad=20)
     ax2.set_xlabel('t', fontsize=30)
     ax1.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
@@ -104,11 +117,11 @@ for j, group in enumerate(groups):
 
     labs = [lab.get_label() for lab in lns]
     ax1.legend(lns, labs, loc=2, fontsize=30,
-               ncol=3, bbox_to_anchor=(-0.05, 1.15, 5.2, 1.0),
+               ncol=ncol, bbox_to_anchor=(-0.05, 1.15, leg_w, leg_h),
                mode='expand', frameon=False
                )
 
-plt.subplots_adjust(hspace=0.25, wspace=0.35)
+plt.subplots_adjust(hspace=0.25, wspace=wspace)
 if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:

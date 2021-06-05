@@ -15,7 +15,7 @@ matplotlib.rcParams['lines.markersize'] = 7
 ap = argparse.ArgumentParser()
 ap.add_argument("--h", required=True, type=str, nargs='+')
 ap.add_argument("--loss-type", required=True, type=str, nargs='+')
-ap.add_argument("--ylim1", required=True, type=, nargs='+')
+ap.add_argument("--ylim1", required=True, type=float, nargs='+')
 ap.add_argument("--ylim2", required=True, type=int, nargs='+')
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
@@ -65,7 +65,13 @@ for j, history in enumerate(histories):
     ax2 = fig.add_subplot(2, cols, plot_idx + cols)
     plot_idx += 1
 
-    ylabel = 'MSE loss' if loss_types[j] == 'mse' else 'accuracy'
+    if loss_types[j] == 'mse':
+        ylabel = 'MSE loss'
+    elif loss_types[j] == 'celoss':
+        ylabel = 'CE Loss'
+        test_acc = test_loss
+    else:
+        ylabel = 'accuracy'
 
     ln1 = ax1.plot(epoch, mu_99, 'b', label='N99-PCA')
     ax1.fill_between(epoch, mu_99 - std_99,
@@ -73,6 +79,7 @@ for j, history in enumerate(histories):
     ln2 = ax1.plot(epoch, mu_95, 'r', label='N95-PCA')
     ax1.fill_between(epoch, mu_95 - std_95,
                      mu_95 + std_95, color='r', alpha=0.1)
+
     ln3 = ax2.plot(epoch, np.array(test_acc), 'k', label='accuracy/loss')
 
     if plot_idx == 2:

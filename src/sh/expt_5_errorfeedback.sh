@@ -1,5 +1,5 @@
-main(){
-python viz/expt_4_errorfeedback.py --baseline \
+cnn(){
+python viz/expt_5_errorfeedback.py --baseline \
     ../ckpts/fmnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.8_residual.pkl \
     ../ckpts/fmnist_100/history/clf_fcn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0_topk_0.1_lbgm_0.8_residual.pkl \
     ../ckpts/mnist_100/history/clf_fcn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.8_residual.pkl \
@@ -20,7 +20,7 @@ python viz/expt_4_errorfeedback.py --baseline \
     --u-int 0 0 1e3 0 0 0 \
     --u-str na na 10^3 na na na\
     --dry-run $dry --final $final \
-    --save ../ckpts/plots/expt_4_errorfeedback_main
+    --save ../ckpts/plots/expt_5_errorfeedback_main
 }
 
 

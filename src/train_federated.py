@@ -13,7 +13,7 @@ from common.arguments import Arguments
 from common.utils import get_device, get_paths, init_logger
 from data.distributor import get_fl_graph
 from data.loader import get_loader
-from models.train import fl_train, test
+from models.train import fl_train, fl_test, test
 from models.utils import get_model
 from viz.training_plots import training_plots
 
@@ -44,9 +44,11 @@ print('+' * 80)
 # prepare graph and data
 _, workers = get_fl_graph(hook, args.num_workers)
 print('Loading data: {}'.format(paths.data_path))
-X_trains, _, y_trains, _, meta = pkl.load(open(paths.data_path, 'rb'))
-
-
+if args.test_type == 'central':
+    X_trains, _, y_trains, _, meta = pkl.load(open(paths.data_path, 'rb'))
+else:
+    X_trains, X_tests, y_trains, y_tests, meta = pkl.load(
+        open(paths.data_path, 'rb'))
 test_loader = get_loader(args.dataset,
                          args.test_batch_size,
                          train=False,
@@ -110,10 +112,10 @@ print('epoch \t tr loss (acc) (mean+-std) \t test loss (acc) \t lbgm+-std')
 for epoch in range(args.start_epoch, args.epochs):
     h_epoch.append(epoch)
 
-    train_loss, train_loss_std, train_acc, train_acc_std, \
+    worker_models, train_loss, train_loss_std, train_acc, train_acc_std, \
         worker_grad_sum, model_mbuf, uplink, avg_error = fl_train(
             args, model, workers, X_trains, y_trains,
-            device, loss_type, worker_models,
+            device, loss_type,
             worker_mbufs, model_mbuf, worker_sdirs, worker_residuals,
             0 if not args.scheduler else epoch-1,
         )
@@ -126,7 +128,11 @@ for epoch in range(args.start_epoch, args.epochs):
     h_grad_agg.append(worker_grad_sum)
     h_error.append(avg_error)
 
-    acc, loss = test(model, device, test_loader, loss_type)
+    if args.test_type == 'central':
+        acc, loss = test(model, device, test_loader, loss_type)
+    else:
+        acc, loss = fl_test(args, workers, X_tests, y_tests,
+                            device, loss_type, worker_models)
     h_acc_test.append(acc)
     h_loss_test.append(loss)
 

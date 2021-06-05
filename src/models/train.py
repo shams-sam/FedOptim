@@ -137,6 +137,7 @@ def federated_worker_process(args, model, loss_fn,
                                    args, device, [], epoch)
         # momentum on local updates will increase heterogeneity
         assert batch_id < args.tau - 1
+        break
 
     error = 0
     # set_model_grads(node_model, accum_grads)
@@ -244,7 +245,7 @@ def distributed_train(args, model, nodes, X_trains, y_trains,
 
 
 def fl_train(args, model, nodes, X_trains, y_trains,
-             device, loss_fn, worker_models,
+             device, loss_fn,
              worker_mbufs, model_mbuf=[],
              worker_sdirs={}, worker_residuals={}, epoch=0):
     # worker_mbufs: worker momentum buffer
@@ -255,6 +256,7 @@ def fl_train(args, model, nodes, X_trains, y_trains,
     # uncomment the next line if model.eval() in test
     # model.train()
 
+    worker_models = {}
     worker_data = {}
     worker_targets = {}
     worker_num_samples = {}
@@ -279,7 +281,7 @@ def fl_train(args, model, nodes, X_trains, y_trains,
     for w in workers:
 
         # approximations in training occur in worker_process
-        node_model, node_batch_grads, worker_mbufs[w], worker_residuals[w], loss, acc, \
+        worker_models[w], node_batch_grads, worker_mbufs[w], worker_residuals[w], loss, acc, \
             error_per_worker, worker_sdirs[w], u = federated_worker_process(
                 args, model, loss_fn_, worker_data[w],
                 worker_targets[w], worker_num_samples[w],
@@ -303,8 +305,43 @@ def fl_train(args, model, nodes, X_trains, y_trains,
     loss_mean, loss_std = loss.mean(), loss.std()
     acc_mean, acc_std = acc.mean(), acc.std()
 
-    return loss_mean, loss_std, acc_mean, acc_std, \
+    return worker_models, loss_mean, loss_std, acc_mean, acc_std, \
         worker_grad_sum, model_mbuf, uplink, avg_error / num_workers
+
+
+def fl_test(args, nodes, X_tests, y_tests,
+            device, loss_fn, worker_models):
+    # worker_mbufs: worker momentum buffer
+    # model_mbuf: model momentum buffer
+
+    # uncomment the next line if model.eval() in test
+    # model.eval()
+
+    worker_data = {}
+    worker_targets = {}
+    worker_losses = {}
+    worker_accs = {}
+
+    # send data, model to workers
+    workers = [_ for _ in nodes.keys() if 'L0' in _]
+    for w, x, y in zip(workers, X_tests, y_tests):
+        worker_data[w] = x.send(nodes[w])
+        worker_targets[w] = y.send(nodes[w])
+
+    for w in workers:
+
+        loader = get_dataloader(
+            worker_data[w].get(), worker_targets[w].get(), args.test_batch_size)
+        worker_losses[w], worker_accs[w] = test(
+            worker_models[w], device, loader, loss_fn
+        )
+
+    loss = np.array([_ for dump, _ in worker_losses.items()])
+    acc = np.array([_ for dump, _ in worker_accs.items()])
+    loss_mean = loss.mean()
+    acc_mean = acc.mean()
+
+    return loss_mean, acc_mean
 
 
 def test(model, device, test_loader, loss_fn):

@@ -87,6 +87,39 @@ python viz/prelim_1.py --h \
 }
 
 
+################################################################################
+# svm: done
+################################################################################
+svm(){
+python viz/prelim_1.py --h \
+    ../ckpts/cifar/history/clf_svm_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_128.pkl \
+    ../ckpts/fmnist/history/clf_svm_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_128.pkl \
+    ../ckpts/mnist/history/clf_svm_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_128.pkl \
+    --models CIFAR:SVM FMNIST:SVM MNIST:SVM \
+    --loss-type ce ce ce \
+    --dry-run $dry --final $final \
+    --ylim1 20 20 20 \
+    --ylim2 1 1 1 \
+    --save ../ckpts/plots/prelim_1_svm_128
+}
+
+
+################################################################################
+# segmentation
+################################################################################
+seg(){
+python viz/prelim_1.py --h \
+    ../ckpts/coco/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_512.pkl \
+    ../ckpts/voc/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.001_decay_1e-05_batch_32.pkl \
+    --models COCO:Segmentation PascalVOC:Segmentation \
+    --loss-type celoss celoss \
+    --dry-run $dry --final $final \
+    --ylim1 50 50 \
+    --ylim2 1 3 \
+    --save ../ckpts/plots/prelim_1_seg_128
+}
+
+
 
 if [ $2 = 'f' ]; then
     final=1

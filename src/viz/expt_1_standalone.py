@@ -22,6 +22,8 @@ ap.add_argument("--u-int", required=True, type=float, nargs='+')  # multiplier
 ap.add_argument("--u-str", required=True, type=str, nargs='+')
 ap.add_argument("--ylim1", required=True, type=float, nargs='+')
 ap.add_argument("--ylim2", required=True, type=int, nargs='+')
+ap.add_argument("--xlim", required=True, type=int, nargs='+')
+ap.add_argument("--wspace", required=False, type=float, default=0.35)
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
@@ -37,6 +39,8 @@ u_int = args['u_int']
 u_str = args['u_str']
 ylim1 = args['ylim1']
 ylim2 = args['ylim2']
+xlim = args['xlim']
+wspace = args['wspace']
 final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
@@ -49,10 +53,10 @@ mse_flag = False
 for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
 
     if dry_run:
-        assert os.path.exists(h_baseline)
-        assert os.path.exists(h_ours)
         print(h_baseline)
+        assert os.path.exists(h_baseline)
         print(h_ours)
+        assert os.path.exists(h_ours)
         continue
 
     b_ep, b_acc, _, _, b_loss, _, _, b_up, _ = pkl.load(open(h_baseline, 'rb'))
@@ -77,7 +81,7 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
     else:
         b_loss = np.array(b_loss)/u_int[j]
         o_loss = np.array(o_loss)/u_int[j]
-        ln1b = ax1.plot(b_ep, b_loss, 'b', label='Vanilla-FL')
+        ln1b = ax1.plot(b_ep, b_loss, 'k', label='Vanilla-FL')
         ln1o = ax1.plot(o_ep, o_loss, 'r', label='LBGM-FL')
     ln2b = ax2.plot(b_ep, b_up, 'k', label='Vanilla-FL')
     ln2b = ax2.plot(o_ep, o_up, 'r', label='LBGM-FL')
@@ -99,8 +103,8 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
     ax2.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
     ax1.grid()
     ax2.grid()
-    ax1.set_xlim(0, n_epochs)
-    ax2.set_xlim(0, n_epochs)
+    ax1.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
+    ax2.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
     ax1.set_ylim(0, ylim1[j])
     ax2.set_ylim(0, ylim2[j])
     if plot_idx != 2:
@@ -112,7 +116,7 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
                mode='expand', frameon=False
                )
 
-plt.subplots_adjust(hspace=0.25, wspace=0.35)
+plt.subplots_adjust(hspace=0.25, wspace=wspace)
 if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:

@@ -195,7 +195,7 @@ def get_model_weights(model, scaling_factor=1):
 
 
 def get_scheduled_lr(args, epoch):
-    epoch = epoch // 15
+    epoch = epoch // 20
     return 0 + 0.5 * (args.lr - 0) * (1 + np.cos(epoch * np.pi / args.epochs))
 
 

@@ -31,6 +31,8 @@ def argparser():
     parser.add_argument('--batch-size', type=int, required=False, default=0)
     parser.add_argument('--test-batch-size', type=int,
                         required=False, default=0)
+    parser.add_argument('--test-type', type=str,
+                        required=False, default='central')
 
     # Std Dev of Gaussian noise added to test datasets
     parser.add_argument('--noise', type=float, required=False)
