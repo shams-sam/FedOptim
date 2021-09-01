@@ -21,6 +21,7 @@ ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
 ap.add_argument("--models", required=True, type=str, nargs='+')
+ap.add_argument("--use-train", required=False, type=int)
 
 args = vars(ap.parse_args())
 histories = args['h']
@@ -31,6 +32,7 @@ final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
 models = args['models']
+use_train = args['use_train']
 assert len(histories) == len(loss_types)
 
 cols = len(histories)
@@ -73,6 +75,9 @@ for j, history in enumerate(histories):
     else:
         ylabel = 'accuracy'
 
+    if use_train:
+        test_acc = train_acc
+
     ln1 = ax1.plot(epoch, mu_99, 'b', label='N99-PCA')
     ax1.fill_between(epoch, mu_99 - std_99,
                      mu_99 + std_99, color='b', alpha=0.1)
@@ -92,8 +97,8 @@ for j, history in enumerate(histories):
     ax2.set_xticks(list(range(0, n_epochs, n_epochs // 4)))
     ax1.grid()
     ax2.grid()
-    ax1.set_xlim(0, n_epochs - 1)
-    ax2.set_xlim(0, n_epochs - 1)
+    ax1.set_xlim(0, ylim1[j])
+    ax2.set_xlim(0, ylim1[j])
     ax1.set_ylim(0, ylim1[j])
     ax2.set_ylim(0, ylim2[j])
     if plot_idx != 5:

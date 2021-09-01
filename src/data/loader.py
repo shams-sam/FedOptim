@@ -163,6 +163,28 @@ def get_loader(dataset, batch_size, train=True,
                                   download=cfg.download,
                                   transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif dataset == 'imagenet':
+        train = 'train' if train else 'val'
+        params = {
+            'mean': (0.4811, 0.4575, 0.4078),
+            'std': (0.2554, 0.2483, 0.2636),
+            'im_size': cfg.im_size[dataset],
+        }
+        if force_resize:
+            params['im_size'] = force_resize
+        if noise:
+            params['noise'] = noise
+        if permutation:
+            params['permutation'] = permutation
+        transform = _get_transform(params)
+        dataset = datasets.ImageNet(root='{}/ImageNet'.format(cfg.data_dir),
+                                    split=train,
+                                    transform=transform)
+        if subset < 1:
+            indices = _get_subset_index(dataset.targets, subset)
+            dataset = Subset(dataset, indices)
+        loader = torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'mnist':
         params = {
             'mean': (0.1307,),

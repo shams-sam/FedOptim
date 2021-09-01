@@ -29,6 +29,12 @@ mnist(){
     python train_centralized.py --device-id 2 1 0 --dataset mnist --clf resnet18 --paradigm sgd --batch-size 256 --epochs 101 --lr 1e-2 --repeat 1 --dry-run 0 --early-stopping 0
 }
 
+################################################################################
+# imagenet: done
+################################################################################
+imagenet(){
+    python train_centralized.py --device-id 1 2 0 --dataset imagenet --clf resnet18 --paradigm sgd --batch-size 512 --epochs 201 --lr 1e-1 --momentum 0.9 --scheduler 1 --repeat 0.1 --dry-run 0 --early-stopping 0
+}
 
 
 $1

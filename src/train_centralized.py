@@ -15,12 +15,12 @@ from common.argparser import argparser
 from common.arguments import Arguments
 import common.config as cfg
 from common.utils import get_device, get_paths, \
-    init_logger, is_approx
+    init_logger
 from data.loader import get_loader
 from models.model_op import add_param_list, get_model_grads
 from models.multi_class_hinge_loss import multiClassHingeLoss
 from models.utils import get_model
-from models.train import test, sdirs_approximation
+from models.train import test
 
 print = functools.partial(print, flush=True)
 torch.set_printoptions(linewidth=120)
@@ -33,7 +33,7 @@ args = Arguments(argparser())
 hook = sy.TorchHook(torch)
 device = get_device(args)
 paths = get_paths(args)
-log_file, std_out = init_logger(paths.log_file, args.dry_run)
+log_file, std_out = init_logger(paths.log_file, args.dry_run, args.load_model)
 if os.path.exists(paths.tb_path):
     shutil.rmtree(paths.tb_path)
 tb = SummaryWriter(paths.tb_path)

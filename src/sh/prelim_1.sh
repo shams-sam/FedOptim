@@ -69,6 +69,20 @@ python viz/prelim_1.py --h \
     --save ../ckpts/plots/prelim_1_mnist_256
 }
 
+################################################################################
+# imagenet: done
+################################################################################
+imagenet(){
+python viz/prelim_1.py --h \
+    ../ckpts/imagenet/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_512.pkl \
+    --models ImageNet:ResNet18 \
+    --loss-type ce \
+    --dry-run $dry --final $final \
+    --ylim1 100 \
+    --ylim2 1 --use-train 1 \
+    --save ../ckpts/plots/prelim_1_imagenet_256
+}
+
 
 ################################################################################
 # svm: done

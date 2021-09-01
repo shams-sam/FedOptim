@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torchvision
 import torchvision.transforms as transforms
+from tqdm import tqdm
 
 
 data_dir = '../../../data'
@@ -12,19 +13,21 @@ download = True
 # coco = COCO(annotation_file='{}/coco/annotations/instances_train2017.json'.format(data_dir))
 
 
-def gen_mean_std(dataset):
+def gen_mean_std(dataset, exit_soon=False):
     dataloader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=len(dataset),
+        batch_size=10000,
         shuffle=False, num_workers=2
     )
     print('Number of data samples:', len(dataset))
-    train = iter(dataloader).next()[0]
-    print('Data shape:', train.shape)
-    mean = np.mean(train.numpy(), axis=(0, 2, 3))
-    std = np.std(train.numpy(), axis=(0, 2, 3))
-    print('Mean: ', mean)
-    print('Std: ', std)
+    if exit_soon:
+        return
+
+    classes = set()
+    for _, (_, labels) in tqdm(enumerate(dataloader), total=len(dataloader)):
+        labels = list(labels.numpy())
+        classes = classes.union(set(labels))
+    print("num_classes: %d" % len(classes))
 
 
 if __name__ == '__main__':
@@ -36,4 +39,9 @@ if __name__ == '__main__':
     dataset = torchvision.datasets.ImageNet(root='{}/ImageNet'.format(data_dir), transform=transforms.Compose(
         [transforms.Resize((im_size, im_size)), transforms.ToTensor()]),)
 
-    gen_mean_std(dataset)
+    gen_mean_std(dataset, exit_soon=True)
+
+    dataset = torchvision.datasets.ImageNet(root='{}/ImageNet'.format(data_dir), split='val', transform=transforms.Compose(
+        [transforms.Resize((im_size, im_size)), transforms.ToTensor()]),)
+
+    gen_mean_std(dataset, exit_soon=True)

@@ -34,6 +34,15 @@ coco(){
         --m 0.9 --dry-run $dry
 }
 
+################################################################################
+# coco: todo
+################################################################################
+imagenet(){
+    python process_grads.py --h \
+	../ckpts/imagenet/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_512.pkl \
+        --m 0.9 --dry-run $dry
+}
+
 
 ################################################################################
 # fmnist: done
