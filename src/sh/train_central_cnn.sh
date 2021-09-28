@@ -13,6 +13,12 @@ cifar(){
     python train_centralized.py --device-id 1 2 0 --dataset cifar --clf cnn --paradigm sgd --batch-size 128 --epochs 201 --lr 1e-2 --momentum 0.9 --scheduler 1 --repeat 1 --dry-run 0 --early-stopping 0
 }
 
+################################################################################
+# cifar100: done
+################################################################################
+cifar100(){
+    python train_centralized.py --device-id 1 2 0 --dataset cifar100 --clf cnn --paradigm sgd --batch-size 128 --epochs 20 --lr 1e-1 --momentum 0.9 --scheduler cosine --repeat 1 --dry-run 0 --early-stopping 0 --save-model 0 &
+}
 
 ################################################################################
 # fmnist: done

@@ -19,11 +19,78 @@ def _get_subset_index(classes, split=0.3):
     return idx_valid
 
 
+def _get_transform_params(dataset, train):
+    if dataset == 'celeba':
+        params = {
+            'mean': (0.5063, 0.4258, 0.3832),
+            'std': (0.3106, 0.2904, 0.2897),
+            'im_size': cfg.im_size[dataset]
+        }
+    elif dataset == 'cifar':
+        params = {
+            'mean': (0.4914, 0.4822, 0.4465),
+            'std': (0.2023, 0.1994, 0.2010),
+        }
+    elif dataset == 'cifar100':
+        params = {
+            'mean': (0.5071, 0.4866, 0.4409),
+            'std': (0.2673, 0.2564, 0.2762),
+        }
+    elif dataset == 'coco':
+        params = {
+            'mean': (0.4701, 0.4469, 0.4076),
+            'std': (0.2463, 0.2424, 0.2596),
+            'im_size': cfg.im_size[dataset]
+        }
+    elif dataset == 'fmnist':
+        params = {
+            'mean': (0.2861,),
+            'std': (0.3530,),
+        }
+    elif dataset == 'imagenet':
+        params = {
+            'mean': (0.4811, 0.4575, 0.4078),
+            'std': (0.2554, 0.2483, 0.2636),
+            'im_size': cfg.im_size[dataset],
+        }
+    elif dataset == 'mnist':
+        params = {
+            'mean': (0.1307,),
+            'std': (0.3081,),
+        }
+    elif dataset == 'svhn':
+        params = {
+            'mean': (0.4377, 0.4438, 0.4728),
+            'std': (0.1980, 0.2010, 0.1970),
+        }
+    elif dataset == 'voc':
+        params = {
+            'mean': (0.4568, 0.4432, 0.4083),
+            'std': (0.2440, 2414, 2591),
+            'im_size': cfg.im_size[dataset]
+        }
+
+    if train and dataset in ['cifar', 'cifar100', 'fmnist', 'imagenet', 'svhn']:
+        params['crop'] = True
+        params['flip'] = True
+        params['rotate'] = 15
+
+    return params
+
+
 def _get_transform(params):
     transform = []
     if 'im_size' in params:
         im_size = params['im_size']
-        transform.append(transforms.Resize((im_size, im_size)))
+        if 'crop' in params:
+            transform.append(transforms.RandomCrop(im_size, padding=4))
+        else:
+            transform.append(transforms.Resize((im_size, im_size)))
+    if 'flip' in params:
+        transform.append(transforms.RandomHorizontalFlip())
+    if 'rotate' in params:
+        rotate = params['rotate']
+        transform.append(transforms.RandomRotation(rotate))
     transform += [
         transforms.ToTensor(),
         transforms.Normalize(params['mean'], params['std']),
@@ -50,9 +117,12 @@ def _permutate_image_pixels(image, permutation):
     return image
 
 
-def get_dataloader(data, targets, batchsize, shuffle=False):
+def get_dataloader(data, targets, batchsize, train, shuffle=True, dataset=False):
     dataset = TensorDataset(data, targets)
-
+    if dataset:
+        dataset.transform = _get_transform(
+            _get_transform_params(dataset, train)
+        )
     return DataLoader(dataset, batch_size=batchsize,
                       shuffle=shuffle, num_workers=1)
 
@@ -70,12 +140,7 @@ def get_loader(dataset, batch_size, train=True,
                                cache_dir=data_dir, split=train)
         return dataset
     elif dataset == 'celeba':
-        train = 'train' if train else 'valid'
-        params = {
-            'mean': (0.5063, 0.4258, 0.3832),
-            'std': (0.3106, 0.2904, 0.2897),
-            'im_size': cfg.im_size[dataset]
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -84,6 +149,7 @@ def get_loader(dataset, batch_size, train=True,
             params['permutation'] = permutation
         transform = _get_transform(params)
 
+        train = 'train' if train else 'valid'
         dataset = datasets.CelebA(cfg.data_dir, split=train,
                                   download=cfg.download,
                                   transform=transform,
@@ -94,10 +160,7 @@ def get_loader(dataset, batch_size, train=True,
         loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'cifar':
-        params = {
-            'mean': (0.4914, 0.4822, 0.4465),
-            'std': (0.2023, 0.1994, 0.2010),
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -111,13 +174,23 @@ def get_loader(dataset, batch_size, train=True,
                              download=cfg.download,
                              transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif dataset == 'cifar100':
+        params = _get_transform_params(dataset, train)
+        if force_resize:
+            params['im_size'] = force_resize
+        if noise:
+            params['noise'] = noise
+        if permutation:
+            params['permutation'] = permutation
+        transform = _get_transform(params)
+
+        loader = torch.utils.data.DataLoader(
+            datasets.CIFAR100(cfg.data_dir, train=train,
+                              download=cfg.download,
+                              transform=transform),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'coco':
-        train = 'train' if train else 'val'
-        params = {
-            'mean': (0.4701, 0.4469, 0.4076),
-            'std': (0.2463, 0.2424, 0.2596),
-            'im_size': cfg.im_size[dataset]
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -133,6 +206,7 @@ def get_loader(dataset, batch_size, train=True,
                 np.array(x).astype(int))),
         ])
 
+        train = 'train' if train else 'val'
         dataset = Coco(
             root='{}/coco/{}2017'.format(cfg.data_dir, train),
             annFile='{}/coco/annotations/instances_{}2017.json'.format(
@@ -146,10 +220,7 @@ def get_loader(dataset, batch_size, train=True,
         loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'fmnist':
-        params = {
-            'mean': (0.2861,),
-            'std': (0.3530,),
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -164,12 +235,7 @@ def get_loader(dataset, batch_size, train=True,
                                   transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'imagenet':
-        train = 'train' if train else 'val'
-        params = {
-            'mean': (0.4811, 0.4575, 0.4078),
-            'std': (0.2554, 0.2483, 0.2636),
-            'im_size': cfg.im_size[dataset],
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -183,13 +249,12 @@ def get_loader(dataset, batch_size, train=True,
         if subset < 1:
             indices = _get_subset_index(dataset.targets, subset)
             dataset = Subset(dataset, indices)
+
+        train = 'train' if train else 'val'
         loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'mnist':
-        params = {
-            'mean': (0.1307,),
-            'std': (0.3081,),
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -204,11 +269,7 @@ def get_loader(dataset, batch_size, train=True,
                            transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'svhn':
-        train = 'train' if train else 'test'
-        params = {
-            'mean': (0.4377, 0.4438, 0.4728),
-            'std': (0.1980, 0.2010, 0.1970),
-        }
+        params = _get_transform_params(dataset, train)
         if force_resize:
             params['im_size'] = force_resize
         if noise:
@@ -217,18 +278,14 @@ def get_loader(dataset, batch_size, train=True,
             params['permutation'] = permutation
         transform = _get_transform(params)
 
+        train = 'train' if train else 'test'
         loader = torch.utils.data.DataLoader(
             datasets.SVHN('{}/SVHN'.format(cfg.data_dir), split=train,
                           download=cfg.download,
                           transform=transform),
             batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'voc':
-        train = 'train' if train else 'val'
-        params = {
-            'mean': (0.4568, 0.4432, 0.4083),
-            'std': (0.2440, 2414, 2591),
-            'im_size': cfg.im_size[dataset]
-        }
+        params = _get_transform_params(dataset, train)
         if noise:
             params['noise'] = noise
         if force_resize:
@@ -244,6 +301,7 @@ def get_loader(dataset, batch_size, train=True,
                 x, max=cfg.output_sizes[dataset] - 1)),
         ])
 
+        train = 'train' if train else 'val'
         loader = torch.utils.data.DataLoader(
             datasets.VOCSegmentation('{}/VOC'.format(cfg.data_dir), image_set=train,
                                      download=cfg.download,

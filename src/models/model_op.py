@@ -131,11 +131,14 @@ def calc_projection(a, b, device):
     # projection of vector a on vector b
     a = a.clone().to(device)
     b = b.clone().to(device)
-    p = (torch.dot(a, b) / torch.dot(b, b)).item()
-    if p < 0.0 or p > 1.0:
-        p = 0.0
+    proj = (torch.dot(a, b) / torch.dot(b, b)).item()
 
-    return p
+    # error of projection calculation
+    cos_alpha = torch.dot(a, b) / (torch.norm(a, 2) * torch.norm(b, 2))
+    sin_alpha = (1 - cos_alpha**2)**(1 / 2)
+    assert sin_alpha >= 0.0 and sin_alpha <= 1.0
+
+    return proj, sin_alpha
 
 
 def get_layer_size(model, flatten=True):
@@ -214,6 +217,9 @@ def gradient_approximation(model, sdirs, device, residuals):
             size = p.grad.size()
             grad_flat = p.grad.clone().flatten()
             true_grad = g.clone()
+            # this will not work with the new definition of calc_projection
+            # v1: calculated only the projection
+            # v2: returns a tuple of (projection, error)
             grad_flat = grad_flat + \
                 calc_projection(true_grad, s.flatten(), device) * \
                 s.flatten().clone().to(device)
@@ -242,12 +248,12 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
         grad_flat = grad_flat + grad_res
 
         if len(lbgs):
-            rho = calc_projection(
+            rho, error = calc_projection(
                 grad_flat, lbgs[i], device)
         else:
-            rho = 0.0
+            error = 1.0
 
-        if rho >= args.error_tol:
+        if error <= args.error_tol:
             update = rho * lbgs[i]
             accum_residuals.append(grad_flat - update)
             accum_rho += rho

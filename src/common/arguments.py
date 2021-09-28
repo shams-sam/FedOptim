@@ -11,6 +11,8 @@ class Arguments():
         self.clf = args.clf
         self.optim = args.optim
         self.scheduler = args.scheduler
+        self.sch_milestones = args.sch_milestones
+        self.sch_gamma = args.sch_gamma
         self.paradigm = args.paradigm
         self.p_args = args.p_args
         self.ncomponent = args.ncomponent

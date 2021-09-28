@@ -8,7 +8,11 @@ def argparser():
     parser.add_argument('--dataset', type=str, required=False)
     parser.add_argument('--clf', type=str, required=False)
     parser.add_argument('--optim', type=str, required=False, default='sgd')
-    parser.add_argument('--scheduler', type=booltype,
+    parser.add_argument('--scheduler', type=str,
+                        required=False, default='cosine')
+    parser.add_argument('--sch-milestones', type=int, nargs='+',
+                        required=False, default=False)
+    parser.add_argument('--sch-gamma', type=float,
                         required=False, default=False)
     # Type of algorithm used: Stochastic, PCA, K-Grad, TopK, etc.
     parser.add_argument('--paradigm', type=str, nargs='+',

@@ -3,12 +3,12 @@ import torch.nn.functional as F
 
 
 class CNN(nn.Module):
-    def __init__(self, nc, fs):
+    def __init__(self, nc, fs, nclasses=10):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(nc, 20, 5, 1)
         self.conv2 = nn.Conv2d(20, 50, 5, 1)
         self.fc1 = nn.Linear(fs, 500)
-        self.fc2 = nn.Linear(500, 10)
+        self.fc2 = nn.Linear(500, nclasses)
 
     def forward(self, x):
         b = x.shape[0]

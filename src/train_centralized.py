@@ -65,18 +65,23 @@ print('+' * 80)
 # Fire the engines
 # ------------------------------------------------------------------------------
 
-model, loss_type = get_model(args)
+model, loss_type = get_model(args, ckpt_path=args.load_model)
 agg_type = 'averaging'
 
-if 'sgd' in args.paradigm:
+if args.optim == 'sgd':
     optimizer = optim.SGD(
         params=model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=5e-4)
-elif 'adam' in args.paradigm:
+elif args.optim == 'adam':
     optimizer = optim.Adam(params=model.parameters(), lr=args.lr)
-if args.scheduler:
+if args.scheduler in ['cosine', '1']:
     print('Initializing scheduler...')
     scheduler = optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=args.epochs)
+elif args.scheduler == 'multistep':
+    assert type(args.sch_milestones) == list and type(args.sch_gamma) == float
+    print('Initializing scheduler...')
+    scheduler = optim.lr_scheduler.MultiStepLR(
+        optimizer, milestones=args.sch_milestones, gamma=args.sch_gamma)
 
 if loss_type == 'hinge':
     loss_fn = multiClassHingeLoss()
@@ -115,7 +120,8 @@ for epoch in range(1, args.epochs + 1):
     running_loss = 0.0
     running_acc = 0.0
     gradi = 0
-    for data, target in tqdm(train_loader, total=len(train_loader), leave=False):
+    # for data, target in tqdm(train_loader, total=len(train_loader), leave=False):
+    for data, target in train_loader:
         optimizer.zero_grad()
         data, target = data.to(device), target.to(device)
         if loss_type == 'mse':
@@ -123,6 +129,7 @@ for epoch in range(1, args.epochs + 1):
         output = model(data)
         loss = loss_fn(output, target)
         loss.backward()
+        # nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         gradi = add_param_list(gradi, get_model_grads(model))
         running_loss += loss.item()
@@ -156,14 +163,18 @@ for epoch in range(1, args.epochs + 1):
 
     if epoch % args.log_intv == 0:
         print('Train Epoch w\\ {}: {} \tTrain: {:.4f} ({:.2f})'
-              ' \t Test: {:.4f} ({:.2f})'.format(
+              ' \t Test: {:.4f} ({:.2f}) LR: {:.06f}'.format(
                   args.paradigm, epoch, h_loss_train[-1], h_acc_train[-1],
-                  h_loss_test[-1], h_acc_test[-1]))
+                  h_loss_test[-1], h_acc_test[-1], optimizer.param_groups[0]['lr']))
         tb.flush()
 
     if acc > best:
         wait = 0
         best = acc
+        if args.save_model:
+            torch.save(model.state_dict(), paths.best_path)
+            best_iter = epoch
+
     else:
         wait += 1
 
@@ -177,6 +188,12 @@ for epoch in range(1, args.epochs + 1):
 # ------------------------------------------------------------------------------
 
 tb.close()
+if args.save_model:
+    print('\nModel best  @ {}, acc {:.4f}: {}'.format(best_iter, best,
+                                                      paths.best_path))
+    torch.save(model.module.state_dict(), paths.stop_path)
+    print('Model stop: {}'.format(paths.stop_path))
+
 pkl.dump((h_epoch, h_acc_train, h_acc_test, h_loss_train,
           h_loss_test, h_grads), open(paths.hist_path, 'wb'))
 print('Saved: ', paths.hist_path)

@@ -8,7 +8,7 @@ from models.cnn import CNN
 from models.fcn import FCN, MLP
 from models.multi_class_hinge_loss import multiClassHingeLoss
 from models.model_op import get_model_size
-import models.resnet as resnet
+import models.resnet_cifar as resnet
 from models.svm import SVM
 from models.unet import UNet
 from models.vgg import VGG
@@ -53,10 +53,16 @@ def get_model(args, parallel=True, ckpt_path=False):
     elif args.clf == 'cnn':
         print('Initializing CNN...')
         model = CNN(nc=args.num_channels,
-                    fs=args.cnn_view)
+                    fs=args.cnn_view,
+                    nclasses=args.output_size)
     elif args.clf == 'resnet18':
         print('Initializing ResNet18...')
         model = resnet.resnet18(
+            num_channels=args.num_channels,
+            num_classes=args.output_size)
+    elif args.clf == 'resnet34':
+        print('Initializing ResNet34...')
+        model = resnet.resnet34(
             num_channels=args.num_channels,
             num_classes=args.output_size)
     elif args.clf == 'vgg19':
