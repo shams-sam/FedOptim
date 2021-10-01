@@ -53,6 +53,12 @@ def _get_transform_params(dataset, train):
             'std': (0.2554, 0.2483, 0.2636),
             'im_size': cfg.im_size[dataset],
         }
+    elif dataset == 'miniimagenet':
+        params = {
+            'mean': (0.4731, 0.4489, 0.4034),
+            'std': (0.2592, 0.2512, 0.2670),
+            'im_size': cfg.im_size[dataset],
+        }
     elif dataset == 'mnist':
         params = {
             'mean': (0.1307,),
@@ -70,7 +76,7 @@ def _get_transform_params(dataset, train):
             'im_size': cfg.im_size[dataset]
         }
 
-    if train and dataset in ['cifar', 'cifar100', 'fmnist', 'imagenet', 'svhn']:
+    if train and dataset in ['cifar', 'cifar100', 'imagenet', 'miniimagenet', 'svhn']:
         params['crop'] = True
         params['flip'] = True
         params['rotate'] = 15
@@ -117,11 +123,11 @@ def _permutate_image_pixels(image, permutation):
     return image
 
 
-def get_dataloader(data, targets, batchsize, train, shuffle=True, dataset=False):
+def get_dataloader(data, targets, batchsize, dataset_name, train, shuffle=True):
     dataset = TensorDataset(data, targets)
-    if dataset:
+    if dataset_name:
         dataset.transform = _get_transform(
-            _get_transform_params(dataset, train)
+            _get_transform_params(dataset_name, train)
         )
     return DataLoader(dataset, batch_size=batchsize,
                       shuffle=shuffle, num_workers=1)
@@ -243,6 +249,8 @@ def get_loader(dataset, batch_size, train=True,
         if permutation:
             params['permutation'] = permutation
         transform = _get_transform(params)
+
+        train = 'train' if train else 'val'
         dataset = datasets.ImageNet(root='{}/ImageNet'.format(cfg.data_dir),
                                     split=train,
                                     transform=transform)
@@ -250,9 +258,23 @@ def get_loader(dataset, batch_size, train=True,
             indices = _get_subset_index(dataset.targets, subset)
             dataset = Subset(dataset, indices)
 
-        train = 'train' if train else 'val'
         loader = torch.utils.data.DataLoader(
             dataset, batch_size=batch_size, shuffle=shuffle, **kwargs)
+    elif dataset == 'miniimagenet':
+        params = _get_transform_params(dataset, train)
+        if force_resize:
+            params['im_size'] = force_resize
+        if noise:
+            params['noise'] = noise
+        if permutation:
+            params['permutation'] = permutation
+        transform = _get_transform(params)
+
+        train = 'train' if train else 'test'
+        loader = torch.utils.data.DataLoader(
+            datasets.ImageFolder(root='{}/MiniImageNet/{}'.format(cfg.data_dir, train),
+                                 transform=transform),
+            batch_size=batch_size, shuffle=shuffle, **kwargs)
     elif dataset == 'mnist':
         params = _get_transform_params(dataset, train)
         if force_resize:

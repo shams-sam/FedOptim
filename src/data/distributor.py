@@ -80,7 +80,7 @@ def get_distributed_data(X_train, y_train, num_parts,
     else:
         X_train_class = {}
         y_train_class = {}
-        for cls in range(10):
+        for cls in range(num_classes):
             indices = torch.where(y_train == cls)
             X_train_class[cls] = X_train[indices]
             y_train_class[cls] = y_train[indices]

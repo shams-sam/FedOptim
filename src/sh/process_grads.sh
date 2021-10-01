@@ -26,6 +26,18 @@ cifar(){
 
 
 ################################################################################
+# cifar100: done
+################################################################################
+# ../ckpts/cifar100/history/clf_fcn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+cifar100(){
+    python process_grads.py --h \
+	../ckpts/cifar100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+	../ckpts/cifar100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+	../ckpts/cifar/history/clf_vgg19_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+	--m 0.9 --dry-run $dry
+}
+
+################################################################################
 # coco: todo
 ################################################################################
 coco(){

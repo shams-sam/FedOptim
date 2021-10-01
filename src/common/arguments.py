@@ -46,6 +46,7 @@ class Arguments():
         if not self.test_batch_size:
             self.test_batch_size = self.num_test
         self.test_type = args.test_type
+        self.skip_bn_update = args.skip_bn_update
         self.noise = args.noise
         self.epochs = args.epochs
         self.tau = args.tau

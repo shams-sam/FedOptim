@@ -65,6 +65,11 @@ def get_model(args, parallel=True, ckpt_path=False):
         model = resnet.resnet34(
             num_channels=args.num_channels,
             num_classes=args.output_size)
+    elif args.clf == 'resnet101':
+        print('Initializing ResNet101...')
+        model = resnet.resnet101(
+            num_channels=args.num_channels,
+            num_classes=args.output_size)
     elif args.clf == 'vgg19':
         print('Initializing VGG19...')
         model = VGG(

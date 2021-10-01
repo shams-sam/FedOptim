@@ -16,6 +16,7 @@ ap.add_argument("--repeat", required=False, type=float, default=True)
 ap.add_argument("--shuffle", required=False, type=booltype, default=True)
 ap.add_argument("--stratify", required=False, type=booltype, default=True)
 ap.add_argument("--uniform", required=False, type=booltype, default=False)
+ap.add_argument("--skip-test", required=False, type=booltype, default=False)
 ap.add_argument("--dry-run", required=False, type=booltype, default=False)
 
 args = vars(ap.parse_args())
@@ -62,14 +63,19 @@ X_trains, y_trains, class_map = get_distributed_data(X_train, y_train,
                                                      stratify=args.stratify,
                                                      uniform=args.uniform,
                                                      shuffle=args.shuffle,
-                                                     non_iid=args.non_iid)
+                                                     non_iid=args.non_iid,
+                                                     num_classes=num_classes)
 
-X_tests, y_tests, _ = get_distributed_data(X_test, y_test, args.num_nodes,
-                                           stratify=args.stratify,
-                                           uniform=args.uniform,
-                                           shuffle=args.shuffle,
-                                           non_iid=args.non_iid,
-                                           class_map=class_map)
+if args.skip_test:
+    X_tests, y_tests = [], []
+else:
+    X_tests, y_tests, _ = get_distributed_data(X_test, y_test, args.num_nodes,
+                                               stratify=args.stratify,
+                                               uniform=args.uniform,
+                                               shuffle=args.shuffle,
+                                               non_iid=args.non_iid,
+                                               num_classes=num_classes,
+                                               class_map=class_map)
 
 if args.non_iid:
     bincounts_train = []
@@ -81,7 +87,11 @@ if args.non_iid:
         bincounts_test.append(np.bincount(_, minlength=num_classes))
 
     bincounts_train = np.concatenate(bincounts_train).reshape(-1, num_classes)
-    bincounts_test = np.concatenate(bincounts_test).reshape(-1, num_classes)
+    if args.skip_test:
+        bincounts_test = np.zeros(bincounts_train.shape)
+    else:
+        bincounts_test = np.concatenate(
+            bincounts_test).reshape(-1, num_classes)
     print("Max Train:", bincounts_train.max(axis=0))
     print("Min Train:", bincounts_train.min(axis=0))
     print("Max Test:", bincounts_test.max(axis=0))
@@ -91,7 +101,10 @@ if args.non_iid:
     bincounts_test = bincounts_test.sum(axis=1)
 else:
     bincounts_train = [len(y_train) for y_train in y_trains]
-    bincounts_test = [len(y_test) for y_test in y_tests]
+    if args.skip_test:
+        bincounts_tests = [0] * len(bincounts_train)
+    else:
+        bincounts_test = [len(y_test) for y_test in y_tests]
     print('Train:', bincounts_train)
     print('Test:', bincounts_test)
 

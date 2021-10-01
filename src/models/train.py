@@ -4,7 +4,7 @@ import numpy as np
 from common.utils import add_gaussian_noise
 from data.loader import get_dataloader
 from models.model_op import atomo_approximation, get_model_grads, add_param_list, get_model_size,\
-    lbgm_approximation, model_update, set_model_grads, sign_sgd_quantization, topk_sparsify
+    lbgm_approximation, load_model, model_update, set_model_grads, sign_sgd_quantization, topk_sparsify
 from models.utils import forward, get_loss_fn, get_optim
 
 
@@ -102,18 +102,22 @@ def distributed_worker_process(args, model, loss_fn,
         loss, correct, error, sdirs, uplink
 
 
-def federated_worker_process(args, model, loss_fn,
+def federated_worker_process(args, model, worker_model, loss_fn,
                              worker_data, worker_targets, worker_num_samples,
-                             worker_mbuf, sdirs, worker_residuals, device, epoch):
+                             worker_mbuf, sdirs, worker_residuals, device, epoch, train):
     # mbuf: momentum buffer
 
-    node_model = model.copy()
+    if worker_model and args.skip_bn_update:
+        node_model = load_model(worker_model, model)  # skips loading bn layer
+    else:
+        node_model = model.copy()
     uplink, _ = get_model_size(node_model)
     opt = get_optim(args, node_model)
 
     data = worker_data.get()
     target = worker_targets.get()
-    dataloader = get_dataloader(data, target, args.batch_size)
+    dataloader = get_dataloader(
+        data, target, args.batch_size, args.dataset, train)
 
     correct = 0
     total_loss = 0
@@ -182,7 +186,7 @@ def distributed_train(args, model, nodes, X_trains, y_trains,
     loss_fn_ = get_loss_fn(loss_fn)
 
     # uncomment the next line if model.eval() in test
-    # model.train()
+    model.train()
 
     worker_loaders = {}
     worker_num_samples = {}
@@ -194,7 +198,8 @@ def distributed_train(args, model, nodes, X_trains, y_trains,
     workers = [_ for _ in nodes.keys() if 'L0' in _]
     num_workers = len(workers)
     for w, x, y in zip(workers, X_trains, y_trains):
-        worker_loaders[w] = get_dataloader(x, y, args.batch_size)
+        worker_loaders[w] = get_dataloader(
+            x, y, args.batch_size, args.dataset, train=True)
         worker_num_samples[w] = x.shape[0]
 
     # train workers
@@ -244,7 +249,7 @@ def distributed_train(args, model, nodes, X_trains, y_trains,
         worker_grad_sum, model_mbuf, uplink, avg_error / num_workers
 
 
-def fl_train(args, model, nodes, X_trains, y_trains,
+def fl_train(args, model, nodes, worker_models, X_trains, y_trains,
              device, loss_fn,
              worker_mbufs, model_mbuf=[],
              worker_sdirs={}, worker_residuals={}, epoch=0):
@@ -254,9 +259,8 @@ def fl_train(args, model, nodes, X_trains, y_trains,
     loss_fn_ = get_loss_fn(loss_fn)
 
     # uncomment the next line if model.eval() in test
-    # model.train()
+    model.train()
 
-    worker_models = {}
     worker_data = {}
     worker_targets = {}
     worker_num_samples = {}
@@ -283,12 +287,13 @@ def fl_train(args, model, nodes, X_trains, y_trains,
         # approximations in training occur in worker_process
         worker_models[w], node_batch_grads, worker_mbufs[w], worker_residuals[w], loss, acc, \
             error_per_worker, worker_sdirs[w], u = federated_worker_process(
-                args, model, loss_fn_, worker_data[w],
+                args, model, worker_models[w] if w in worker_models else None,
+                loss_fn_, worker_data[w],
                 worker_targets[w], worker_num_samples[w],
                 worker_mbufs[w] if w in worker_mbufs else [],
                 worker_sdirs[w] if w in worker_sdirs else [],
                 worker_residuals[w] if w in worker_residuals else [],
-                device, epoch)
+                device, epoch, train=True)
         total_uplink += min(uplink, u)
         avg_error += error_per_worker
 
@@ -315,7 +320,7 @@ def fl_test(args, nodes, X_tests, y_tests,
     # model_mbuf: model momentum buffer
 
     # uncomment the next line if model.eval() in test
-    # model.eval()
+    model.eval()
 
     worker_data = {}
     worker_targets = {}
@@ -331,7 +336,7 @@ def fl_test(args, nodes, X_tests, y_tests,
     for w in workers:
 
         loader = get_dataloader(
-            worker_data[w].get(), worker_targets[w].get(), args.test_batch_size)
+            worker_data[w].get(), worker_targets[w].get(), args.test_batch_size, args.dataset, train=False)
         worker_losses[w], worker_accs[w] = test(
             worker_models[w], device, loader, loss_fn
         )

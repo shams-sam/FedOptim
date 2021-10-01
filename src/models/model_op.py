@@ -135,10 +135,10 @@ def calc_projection(a, b, device):
 
     # error of projection calculation
     cos_alpha = torch.dot(a, b) / (torch.norm(a, 2) * torch.norm(b, 2))
-    sin_alpha = (1 - cos_alpha**2)**(1 / 2)
-    assert sin_alpha >= 0.0 and sin_alpha <= 1.0
+    sin2_alpha = 1 - cos_alpha**2
+    assert sin2_alpha >= 0.0 and sin2_alpha <= 1.0
 
-    return proj, sin_alpha
+    return proj, sin2_alpha
 
 
 def get_layer_size(model, flatten=True):
@@ -268,6 +268,17 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
 
     # number of layers = (i+1) and not i because its zero-indexed
     return accum_lbgs, accum_residuals, uplink, accum_rho / (i + 1)
+
+
+def load_model(tgt_model, src_model):
+    src_state_dict = src_model.state_dict()
+    for name, param in tgt_model.named_parameters():
+        if 'bn' in name:
+            continue
+        with torch.no_grad():
+            param.copy_(src_state_dict[name])
+
+    return tgt_model
 
 
 def load_model_grad(model, grads):

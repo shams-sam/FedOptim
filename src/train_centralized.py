@@ -141,7 +141,7 @@ for epoch in range(1, args.epochs + 1):
             running_acc = running_loss
         num_minibatches += 1
     gradi = [_/num_minibatches for _ in gradi]
-    if args.scheduler:
+    if args.scheduler != '0':
         scheduler.step()
 
     h_grads.append(gradi)

@@ -3,11 +3,12 @@ sys.path.append('../')
 from data.loader import get_loader  # noqa
 
 datasets = [
-    # 'celeba',  # regression
-    # 'cifar',  # classification
-    # 'coco', 'voc',  # semantic segmentation
-    # 'fmnist', 'mnist', 'svhn',
-    'imagenet'  # classification
+    'celeba',  # regression
+    'cifar', 'cifar100',  # classification
+    # 'coco',
+    'voc',  # semantic segmentation
+    'fmnist', 'mnist', 'svhn',
+    'miniimagenet', 'imagenet'  # classification
 ]
 test_subset = [
     'celeba', 'coco', 'imagenet'

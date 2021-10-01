@@ -9,7 +9,7 @@ def argparser():
     parser.add_argument('--clf', type=str, required=False)
     parser.add_argument('--optim', type=str, required=False, default='sgd')
     parser.add_argument('--scheduler', type=str,
-                        required=False, default='cosine')
+                        required=False, default='0')
     parser.add_argument('--sch-milestones', type=int, nargs='+',
                         required=False, default=False)
     parser.add_argument('--sch-gamma', type=float,
@@ -37,6 +37,8 @@ def argparser():
                         required=False, default=0)
     parser.add_argument('--test-type', type=str,
                         required=False, default='central')
+    parser.add_argument('--skip-bn-update', type=booltype,
+                        required=False, default=1)
 
     # Std Dev of Gaussian noise added to test datasets
     parser.add_argument('--noise', type=float, required=False)

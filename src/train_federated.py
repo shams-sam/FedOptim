@@ -114,7 +114,7 @@ for epoch in range(args.start_epoch, args.epochs):
 
     worker_models, train_loss, train_loss_std, train_acc, train_acc_std, \
         worker_grad_sum, model_mbuf, uplink, avg_error = fl_train(
-            args, model, workers, X_trains, y_trains,
+            args, model, workers, worker_models, X_trains, y_trains,
             device, loss_type,
             worker_mbufs, model_mbuf, worker_sdirs, worker_residuals,
             0 if not args.scheduler else epoch-1,
