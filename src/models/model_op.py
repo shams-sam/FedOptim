@@ -134,9 +134,17 @@ def calc_projection(a, b, device):
     proj = (torch.dot(a, b) / torch.dot(b, b)).item()
 
     # error of projection calculation
-    cos_alpha = torch.dot(a, b) / (torch.norm(a, 2) * torch.norm(b, 2))
+    cos_alpha = torch.nn.CosineSimilarity(dim=0, eps=1e-6)(a, b)
     sin2_alpha = 1 - cos_alpha**2
-    assert sin2_alpha >= 0.0 and sin2_alpha <= 1.0
+    try:
+        assert sin2_alpha >= 0.0 and sin2_alpha <= 1.0
+    except Exception as e:
+        if torch.isclose(sin2_alpha, torch.tensor(0.0), atol=1e-6):
+            sin2_alpha = 0.0
+        else:
+            print(f'value of sin2_alpha: {sin2_alpha}')
+            print(e)
+            exit()
 
     return proj, sin2_alpha
 
