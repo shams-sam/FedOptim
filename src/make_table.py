@@ -30,7 +30,7 @@ datasets = {
 archs = ['cnn', 'fcn', 'resnet18', 'vgg19']
 iids = [0, 3, 10, 100]
 workers = [0, 10, 100]
-lrs = ['1e-05', '2e-05', 0.1, 0.01, 0.03, 0.001, 0.0001]
+lrs = ['1e-05', '2e-05', 0.1, 0.01, 0.03, 0.001, 0.0001, 0.0003]
 batches = [0, 64, 128, 256, 512]
 paradigms = ['central', 'federated', 'distributed',
              'lbgm', 'atomo', 'atomo_lbgm', 'signsgd', 'signsgd_lbgm', 'topk', 'topk_lbgm']

@@ -273,10 +273,9 @@ def lbgm_approximation(args, model, lbgs, residuals, device):
 def load_model(tgt_model, src_model):
     src_state_dict = src_model.state_dict()
     for name, param in tgt_model.named_parameters():
-        if 'bn' in name:
-            continue
         with torch.no_grad():
-            param.copy_(src_state_dict[name])
+            if 'bn' in name:
+                param.copy_(src_state_dict[name])
 
     return tgt_model
 

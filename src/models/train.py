@@ -108,7 +108,8 @@ def federated_worker_process(args, model, worker_model, loss_fn,
     # mbuf: momentum buffer
 
     if worker_model and args.skip_bn_update:
-        node_model = load_model(worker_model, model)  # skips loading bn layer
+        # skips loading bn layer
+        node_model = load_model(model.copy(), worker_model.copy())
     else:
         node_model = model.copy()
     uplink, _ = get_model_size(node_model)
