@@ -77,7 +77,7 @@ for j, group in enumerate(groups):
         b_ep, b_acc, _, _, b_loss, _, _, b_up, _ = pkl.load(open(h, 'rb'))
         b_up = np.cumsum(b_up) / m_int[j]
         n_epochs = len(b_ep)
-        label = r'$\rho_k^{{(threshold)}}={}$'.format(labels[i])
+        label = r'$\delta_k^{\mathsf{threshold}}$' + '={}'.format(labels[i])
         if labels[i] == 'na':
             label = 'Vanilla FL'
         if loss_types[j] == 'ce':
