@@ -71,4 +71,4 @@ class Arguments():
         if self.dry_run:
             self.save_model = False
             self.log_interval = 1
-            self.epochs = 3
+            self.epochs = 30

@@ -35,6 +35,24 @@ python viz/prelim_1.py --h \
 
 
 ################################################################################
+# cifar100: done
+################################################################################
+cifar100(){
+python viz/prelim_1.py --h \
+    ../ckpts/cifar100/history/clf_fcn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    ../ckpts/cifar100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    ../ckpts/cifar100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    ../ckpts/cifar100/history/clf_vgg19_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    --models CIFAR100:FCN CIFAR100:CNN CIFAR100:ResNet18 CIFAR100:VGG19 \
+    --loss-type ce ce ce ce\
+    --dry-run $dry --final $final \
+    --ylim1 200 200 200 200 \
+    --ylim2 1 1 1 1 \
+    --save ../ckpts/plots/prelim_1_cifar100_128
+}
+
+
+################################################################################
 # fmnist: done
 ################################################################################
 fmnist(){

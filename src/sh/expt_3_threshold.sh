@@ -53,7 +53,7 @@ python viz/expt_3_threshold.py --history \
     ../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.6.pkl \
     ../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.4.pkl \
     ../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.2.pkl \
-    ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_2e-05_decay_1e-05_batch_0.pkl \
+    ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_2e-05_decay_1e-05_batch_0.pkl \ # training another set using 1e-05
     ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_2e-05_decay_1e-05_batch_0_lbgm_0.9.pkl \
     ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_2e-05_decay_1e-05_batch_0_lbgm_0.8.pkl \
     ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_2e-05_decay_1e-05_batch_0_lbgm_0.6.pkl \
@@ -67,13 +67,14 @@ python viz/expt_3_threshold.py --history \
     --m-str 10^8 10^8 10^8 \
     --u-int 0 0 1e4 \
     --u-str na na 10^4\
-    --ylim1 0.75 0.75 2 \
-    --ylim2 4 4 3 \
+    --ylim1 0.75 0.75 5 \
+    --ylim2 4 4 2 \
     --wspace 0.45 --ncol 2 \
     --leg-w 4.0 --leg-h 1.3 \
     --dry-run $dry --final $final \
     --save ../ckpts/plots/expt_3_threshold_cnn
 }
+
 
 
 fcn(){
