@@ -18,7 +18,7 @@ cifar(){
 # fmnist:
 ################################################################################
 fmnist(){
-    python train_federated.py --device-id 1  --dataset fmnist --clf fcn --paradigm signsgd lbgm --error-tol 0.6 --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 1e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
+    python train_federated.py --device-id 1  --dataset fmnist --clf fcn --paradigm signsgd lbgm --error-tol 0.4 --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 3e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
 }
 
 
@@ -26,7 +26,7 @@ fmnist(){
 # mnist:
 ################################################################################
 mnist(){
-    python train_federated.py --device-id 1 --dataset mnist --clf fcn --paradigm signsgd lbgm --error-tol 0.6 --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 1e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
+    python train_federated.py --device-id 1 --dataset mnist --clf fcn --paradigm signsgd lbgm --error-tol 0.4 --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 1e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
 }
 
 n=$2

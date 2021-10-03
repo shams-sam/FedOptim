@@ -17,7 +17,7 @@ cifar(){
 # fmnist:
 ################################################################################
 fmnist(){
-    python train_federated.py --device-id 1 2 0 --dataset fmnist --clf cnn --paradigm signsgd --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 1e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
+    python train_federated.py --device-id 1 2 0 --dataset fmnist --clf cnn --paradigm signsgd --optim sgd --num-workers 100 --batch-size 0 --test-batch-size 128 --epochs 101 --lr 3e-4 --momentum 0.9 --non-iid $n --repeat 1 --dry-run 0 &
 }
 
 

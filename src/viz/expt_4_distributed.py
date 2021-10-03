@@ -26,6 +26,7 @@ ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
 ap.add_argument("--models", required=True, type=str, nargs='+')
+ap.add_argument("--wspace", required=False, type=float, default=0.35)
 
 args = vars(ap.parse_args())
 baselines = args['baseline']
@@ -41,6 +42,7 @@ final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
 models = args['models']
+wspace = args['wspace']
 
 cols = len(baselines)
 fig = plt.figure(figsize=(5 * cols, 8))
@@ -111,7 +113,7 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
                mode='expand', frameon=False
                )
 
-plt.subplots_adjust(hspace=0.25, wspace=0.35)
+plt.subplots_adjust(hspace=0.25, wspace=wspace)
 if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:

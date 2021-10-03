@@ -13,7 +13,7 @@ cifar(){
 
 # skip-test if distributing over 100 nodes since each node will get only 1 class example in test set
 cifar100(){
-    python init_data.py --dataset cifar100 --num-nodes $n --non-iid $i --repeat 1 --shuffle 1 --stratify 1 --uniform 1 --skip-test 1 --dry-run 0
+    python init_data.py --dataset cifar100 --num-nodes $n --non-iid $i --repeat 1 --shuffle 1 --stratify 1 --uniform 1 --skip-test 0 --dry-run 0
 }
 
 fmnist(){
