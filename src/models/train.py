@@ -321,7 +321,7 @@ def fl_test(args, nodes, X_tests, y_tests,
     # model_mbuf: model momentum buffer
 
     # uncomment the next line if model.eval() in test
-    model.eval()
+    # model.eval()
 
     worker_data = {}
     worker_targets = {}
@@ -355,7 +355,7 @@ def test(model, device, test_loader, loss_fn):
     # eval creates issue for models with batch normalization issue
     # pytorch issue discussed here:
     # https://discuss.pytorch.org/t/model-eval-gives-incorrect-loss-for-model-with-batchnorm-layers/7561/45
-    model.eval()
+    # model.eval()
     num_minibatches = 0
     running_loss = 0.0
     running_acc = 0.0
