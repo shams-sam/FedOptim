@@ -182,6 +182,35 @@ python viz/expt_2_plugnplay.py --baseline \
     --save ../ckpts/plots/expt_2_plugnplay_resnet18
 }
 
+pfl(){
+python viz/expt_2_plugnplay.py --baseline \
+    ../ckpts/cifar_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_10_lr_0.01_decay_1e-05_batch_0_topk_0.1_residual.pkl \
+    ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0_topk_0.1_residual.pkl \
+    ../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_1e-05_decay_1e-05_batch_0_topk_0.1_residual.pkl \
+    ../ckpts/cifar_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_atomo_2.pkl \
+    ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0_atomo_2.pkl \
+    ../ckpts/celeba_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_1e-05_decay_1e-05_batch_0_atomo_2.pkl \
+    --ours \
+        ../ckpts/cifar_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_topk_0.1_lbgm_0.6_residual.pkl \
+        ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0_topk_0.1_lbgm_0.6_residual.pkl \
+        ../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_1e-05_decay_1e-05_batch_0_topk_0.1_lbgm_0.4_residual.pkl \
+	../ckpts/cifar_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_atomo_2_lbgm_0.2.pkl \
+        ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0_atomo_2_lbgm_0.4.pkl \
+        ../ckpts/celeba_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_1e-05_decay_1e-05_batch_0_atomo_2_lbgm_0.4.pkl \
+    --loss-type ce ce mse ce ce mse \
+    --models CIFAR-10:Non-IID/Top-K CIFAR-100:Non-IID/Top-K CelebA:Top-K CIFAR-10:Non-IID/ATOMO CIFAR-100:Non-IID/ATOMO CelebA:ATOMO \
+    --m-int 1e6 1e6 1e6 1e6 1e6 1e6\
+    --m-str 10^6 10^6 10^6 10^6 10^6 10^6 \
+    --u-int 0 0 1e4 0 0 1e4 \
+    --u-str na na 10^4 na na 10^4 \
+    --ylim1 0.8 0.6 2 0.8 0.6 2 \
+    --ylim2 15 35 8 10 10 2 \
+    --xlim 0 0 0 0 0 0 \
+    --wspace 0.45 \
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/expt_2_plugnplay_resnet18_pfl
+}
+
 
 
 

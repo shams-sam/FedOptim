@@ -69,6 +69,41 @@ python viz/prelim_2.py --h \
     --save ../ckpts/plots/prelim_2_cifar_vgg19_128
 }
 
+################################################################################
+# cifar100:
+################################################################################
+cifar100_cnn(){
+python viz/prelim_2.py --h \
+    ../ckpts/cifar100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    --dataset CIFAR-100 --cols 4 --rows 2\
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/prelim_2_cifar100_cnn_128
+}
+
+cifar100_fcn(){
+python viz/prelim_2.py --h \
+    ../ckpts/cifar100/history/clf_fcn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    --dataset CIFAR-100 --cols 2 --rows 1\
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/prelim_2_cifar100_fcn_128
+}
+
+cifar100_resnet18(){
+python viz/prelim_2.py --h \
+    ../ckpts/cifar100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    --dataset CIFAR-100 --cols 7 --rows 9\
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/prelim_2_cifar100_resnet18_128
+}
+
+cifar100_vgg19(){
+python viz/prelim_2.py --h \
+    ../ckpts/cifar100/history/clf_vgg19_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.1_decay_1e-05_batch_128.pkl \
+    --dataset CIFAR-100 --cols 7 --rows 10\
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/prelim_2_cifar100_vgg19_128
+}
+
 
 ################################################################################
 # coco:

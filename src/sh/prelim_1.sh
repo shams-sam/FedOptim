@@ -47,7 +47,7 @@ python viz/prelim_1.py --h \
     --loss-type ce ce ce ce\
     --dry-run $dry --final $final \
     --ylim1 200 200 200 200 \
-    --ylim2 1 1 1 1 \
+    --ylim2 0.75 0.75 0.75 0.75 \
     --save ../ckpts/plots/prelim_1_cifar100_128
 }
 

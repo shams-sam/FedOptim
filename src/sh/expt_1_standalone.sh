@@ -152,6 +152,30 @@ python viz/expt_1_standalone.py --baseline \
 }
 
 
+pfl(){
+python viz/expt_1_standalone.py --baseline \
+   ../ckpts/cifar_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+   ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0.pkl \
+   ../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_1e-05_decay_1e-05_batch_0.pkl \
+   --ours \
+        ../ckpts/cifar_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_10_lr_0.01_decay_1e-05_batch_0_lbgm_0.2.pkl \
+        ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.1_decay_1e-05_batch_0_lbgm_0.2.pkl \
+	../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_1e-05_decay_1e-05_batch_0_lbgm_0.2.pkl \
+    --loss-type ce ce mse \
+    --models CIFAR-10:Non-IID CIFAR-100:Non-IID CelebA:Regression \
+    --m-int 1e8 1e8 1e8 \
+    --m-str 10^8 10^8 10^8 \
+    --u-int 0 0 1e4 \
+    --u-str na na 10^4 \
+    --ylim1 0.8 0.6 2 \
+    --ylim2 2 4 1 \
+    --xlim 0 0 0 \
+    --wspace 0.5 \
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/expt_1_standalone_resnet18_pfl
+}
+
+
 
 
 

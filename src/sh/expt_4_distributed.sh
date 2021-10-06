@@ -89,6 +89,28 @@ python viz/expt_4_distributed.py --baseline \
     --save ../ckpts/plots/expt_4_distributed_fcn
 }
 
+pfl(){
+python viz/expt_4_distributed.py --baseline \
+    ../ckpts/cifar_100/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.001_decay_1e-05_batch_0_signsgd.pkl \
+    ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.01_decay_1e-05_batch_0_signsgd.pkl \
+    ../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_0.0001_decay_1e-05_batch_0_signsgd.pkl \
+	--ours \
+        ../ckpts/cifar_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_3_num_workers_10_lr_0.001_decay_1e-05_batch_0_signsgd_lbgm_0.2.pkl \
+        ../ckpts/cifar100_50/history/clf_resnet18_optim_sgd_uniform_True_non_iid_10_num_workers_50_lr_0.01_decay_1e-05_batch_0_signsgd_lbgm_0.4.pkl \
+	../ckpts/celeba_10/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_10_lr_0.0001_decay_1e-05_batch_0_signsgd_lbgm_0.4.pkl \
+    --loss-type ce ce mse \
+    --models CIFAR-10:Non-IID/SignSGD CIFAR-100:Non-IID/SignSGD CelebA:SignSGD \
+    --m-int 1e6 1e6 1e6 \
+    --m-str 10^6 10^6 10^6 \
+    --u-int 0 0 1e4\
+    --u-str na na 10^4\
+    --ylim1 0.8 0.65 2 \
+    --ylim2 150 350 140 \
+    --wspace 0.45 \
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/expt_4_distributed_resnet18_pfl
+}
+
 
 
 if [ $2 = 'f' ]; then
