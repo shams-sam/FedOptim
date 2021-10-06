@@ -26,6 +26,7 @@ ap.add_argument("--wspace", required=False, type=float, default=0.35)
 ap.add_argument("--ncol", required=False, type=int, default=3)
 ap.add_argument("--leg-w", required=False, type=float, default=5.2)
 ap.add_argument("--leg-h", required=False, type=float, default=1.0)
+ap.add_argument("--leg-l", required=False, type=float, default=-0.05)
 ap.add_argument("--final", required=False, type=int, default=0)
 ap.add_argument("--save", required=True, type=str)
 ap.add_argument("--dry-run", required=True, type=int)
@@ -46,6 +47,7 @@ wspace = args['wspace']
 ncol = args['ncol']
 leg_w = args['leg_w']
 leg_h = args['leg_h']
+leg_l = args['leg_l']
 final = args['final']
 save_path = args['save']
 dry_run = args['dry_run']
@@ -117,7 +119,7 @@ for j, group in enumerate(groups):
 
     labs = [lab.get_label() for lab in lns]
     ax1.legend(lns, labs, loc=2, fontsize=30,
-               ncol=ncol, bbox_to_anchor=(-0.05, 1.15, leg_w, leg_h),
+               ncol=ncol, bbox_to_anchor=(leg_l, 1.15, leg_w, leg_h),
                mode='expand', frameon=False
                )
 

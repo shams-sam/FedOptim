@@ -98,13 +98,14 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
             ax2.set_ylabel(ylabel, fontsize=30)
     ax1.set_title(models[j].replace(":", "\n"), fontsize=30, pad=20)
     ax2.set_xlabel('t', fontsize=30)
-    ax1.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
+    ax_epoch = n_epochs if xlim[j] == 0 else xlim[j]
+    ax1.set_xticks(list(range(0, ax_epoch+1, ax_epoch // 4)))
     # ax1.set_xticklabels([])
-    ax2.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
+    ax2.set_xticks(list(range(0, ax_epoch+1, ax_epoch // 4)))
     ax1.grid()
     ax2.grid()
-    ax1.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
-    ax2.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
+    ax1.set_xlim(0, ax_epoch)
+    ax2.set_xlim(0, ax_epoch)
     ax1.set_ylim(0, ylim1[j])
     ax2.set_ylim(0, ylim2[j])
     if plot_idx != 2:

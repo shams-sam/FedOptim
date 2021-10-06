@@ -98,24 +98,25 @@ for j, (h_baseline, h_ours) in enumerate(zip(baselines, ours)):
             ax2.set_ylabel(ylabel, fontsize=30)
     ax1.set_title(models[j].replace(":", "\n"), fontsize=30, pad=20)
     ax2.set_xlabel('t', fontsize=30)
-    ax1.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
+    ax_epoch = int(n_epochs if xlim[j] == 0 else xlim[j])
+    ax1.set_xticks(list(range(0, ax_epoch+1, ax_epoch // 4)))
     # ax1.set_xticklabels([])
-    ax2.set_xticks(list(range(0, n_epochs+1, n_epochs // 4)))
+    ax2.set_xticks(list(range(0, ax_epoch+1, ax_epoch // 4)))
     ax1.grid()
     ax2.grid()
-    ax1.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
-    ax2.set_xlim(0, n_epochs if xlim[j] == 0 else xlim[j])
+    ax1.set_xlim(0, ax_epoch)
+    ax2.set_xlim(0, ax_epoch)
     ax1.set_ylim(0, ylim1[j])
     ax2.set_ylim(0, ylim2[j])
     if plot_idx != 3:
         continue
     lns = ln1b + ln1o  # + ln3
     labs = [lab.get_label() for lab in lns]
-    ax1.legend(lns, labs, loc='lower right', fontsize=30, ncol=2, bbox_to_anchor=(-1.45, 1.4, 2.5, 2),
+    ax1.legend(lns, labs, loc='lower right', fontsize=30, ncol=2, bbox_to_anchor=(-1.45, 1.4, 2.6, 2),
                mode='expand', frameon=False
                )
 
-plt.subplots_adjust(hspace=0.25, wspace=0.35)
+plt.subplots_adjust(hspace=0.25, wspace=wspace)
 if not final and not dry_run:
     plt.savefig(save_path + '.png', bbox_inches='tight', dpi=100)
 else:

@@ -22,6 +22,55 @@ python viz/expt_1_standalone.py --baseline \
     --save ../ckpts/plots/expt_1_standalone_main
 }
 
+main_non_iid(){
+python viz/expt_1_standalone.py --baseline \
+    ../ckpts/mnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+    ../ckpts/fmnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.03_decay_1e-05_batch_0.pkl \
+    ../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+    ../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_1e-05_decay_1e-05_batch_0.pkl \
+    --ours \
+        ../ckpts/mnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.2.pkl \
+        ../ckpts/fmnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.03_decay_1e-05_batch_0_lbgm_0.2.pkl \
+	../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_3_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.1.pkl \
+	../ckpts/celeba_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_100_lr_1e-05_decay_1e-05_batch_0_lbgm_0.2.pkl \
+    --loss-type ce ce ce mse \
+    --models MNIST:Non-IID FMNIST:Non-IID CIFAR-10:Non-IID CelebA:Regression \
+    --m-int 1e6 1e6 1e6 1e6 \
+    --m-str 10^6 10^6 10^6 10^6 \
+    --u-int 0 0 0 1e4 \
+    --u-str na na na 10^4 \
+    --ylim1 1 0.9 0.7 2 \
+    --ylim2 45 45 400 150 \
+    --xlim 0 0 500 200 \
+    --wspace 0.45 \
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/expt_1_standalone_main_non_iid
+}
+
+# cifar lbgm 0.1 is available to reduce performance gap
+main_iid(){
+python viz/expt_1_standalone.py --baseline \
+    ../ckpts/mnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+    ../ckpts/fmnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.03_decay_1e-05_batch_0.pkl \
+    ../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0.pkl \
+    --ours \
+        ../ckpts/mnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.2.pkl \
+        ../ckpts/fmnist_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.03_decay_1e-05_batch_0_lbgm_0.2.pkl \
+	../ckpts/cifar_100/history/clf_cnn_optim_sgd_uniform_True_non_iid_10_num_workers_100_lr_0.01_decay_1e-05_batch_0_lbgm_0.2.pkl \
+    --loss-type ce ce ce mse \
+    --models MNIST:IID FMNIST:IID CIFAR-10:IID \
+    --m-int 1e6 1e6 1e6 \
+    --m-str 10^6 10^6 10^6 \
+    --u-int 0 0 0 \
+    --u-str na na na \
+    --ylim1 1 0.9 0.7 \
+    --ylim2 45 45 400 \
+    --xlim 0 0 500 \
+    --wspace 0.45 \
+    --dry-run $dry --final $final \
+    --save ../ckpts/plots/expt_1_standalone_main_iid
+}
+
 
 cnn(){
 python viz/expt_1_standalone.py --baseline \
@@ -63,7 +112,7 @@ python viz/expt_1_standalone.py --baseline \
     --m-str 10^6 10^6 10^6 10^6 \
     --u-int 0 0 0 0  \
     --u-str na na na na \
-    --ylim1 1 1 1 1 \
+    --ylim1 1 1 0.9 0.9 \
     --ylim2 1 1 1 1 \
     --xlim 0 0 0 0 \
     --wspace 0.35 \
