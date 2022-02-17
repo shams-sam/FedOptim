@@ -61,6 +61,7 @@ for j, history in enumerate(histories):
     mu_95 = mat_95.mean(axis=1)
     std_95 = mat_95.std(axis=1)
     n_epochs = mat_99.shape[0]
+    print(len(epoch), mat_99.shape[0])
     assert len(epoch) == mat_99.shape[0]
 
     ax1 = fig.add_subplot(2, cols, plot_idx)
@@ -97,8 +98,8 @@ for j, history in enumerate(histories):
     ax2.set_xticks(list(range(0, n_epochs, n_epochs // 4)))
     ax1.grid()
     ax2.grid()
-    ax1.set_xlim(0, ylim1[j])
-    ax2.set_xlim(0, ylim1[j])
+    ax1.set_xlim(0, len(epoch))  # ylim1[j])
+    ax2.set_xlim(0, len(epoch))  # ylim1[j])
     ax1.set_ylim(0, ylim1[j])
     ax2.set_ylim(0, ylim2[j])
     if plot_idx != 5:

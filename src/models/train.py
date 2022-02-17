@@ -271,7 +271,6 @@ def fl_train(args, model, nodes, worker_models, X_trains, y_trains,
 
     # send data, model to workers
     workers = [_ for _ in nodes.keys() if 'L0' in _]
-    num_workers = len(workers)
     for w, x, y in zip(workers, X_trains, y_trains):
         worker_data[w] = x.send(nodes[w])
         worker_targets[w] = y.send(nodes[w])
@@ -283,11 +282,24 @@ def fl_train(args, model, nodes, worker_models, X_trains, y_trains,
     total_uplink = 0
 
     # for w in tqdm(workers, leave=False):  # use if progressbar needed
-    for w in workers:
+    num_workers = 0
+    worker_sample = np.ones((len(workers),))
+    if args.sample != 1.0:
+        # for random sampling only
+        # worker_sample = np.random.randint(0, 2, size=(len(workers),))
+        # for arbitrary proportion sampled uniformly
+        worker_sample = np.zeros((len(workers),), dtype=int)
+        num_sampled = int(args.sample*len(workers))
+        assert num_sampled >= 1
+        sampled = np.random.choice(
+            range(len(workers)), num_sampled, replace=False)
+        worker_sample[sampled] = 1
+
+    for worker_id, w in enumerate(workers):
 
         # approximations in training occur in worker_process
         worker_models[w], node_batch_grads, worker_mbufs[w], worker_residuals[w], loss, acc, \
-            error_per_worker, worker_sdirs[w], u = federated_worker_process(
+            error_per_worker, tmp_sdir, u = federated_worker_process(
                 args, model, worker_models[w] if w in worker_models else None,
                 loss_fn_, worker_data[w],
                 worker_targets[w], worker_num_samples[w],
@@ -295,12 +307,17 @@ def fl_train(args, model, nodes, worker_models, X_trains, y_trains,
                 worker_sdirs[w] if w in worker_sdirs else [],
                 worker_residuals[w] if w in worker_residuals else [],
                 device, epoch, train=True)
-        total_uplink += min(uplink, u)
         avg_error += error_per_worker
 
-        worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
-        worker_losses[w] = loss
-        worker_accs[w] = acc
+        if worker_sample[worker_id] == 1:
+            total_uplink += min(uplink, u)
+            num_workers += 1
+            worker_grad_sum = add_param_list(worker_grad_sum, node_batch_grads)
+            worker_losses[w] = loss
+            worker_accs[w] = acc
+            worker_sdirs[w] = tmp_sdir
+    if not args.sample:
+        assert num_workers == len(workers)
 
     uplink = min(uplink, total_uplink / num_workers)
     model_mbuf = model_update(
@@ -312,7 +329,7 @@ def fl_train(args, model, nodes, worker_models, X_trains, y_trains,
     acc_mean, acc_std = acc.mean(), acc.std()
 
     return worker_models, loss_mean, loss_std, acc_mean, acc_std, \
-        worker_grad_sum, model_mbuf, uplink, avg_error / num_workers
+        worker_grad_sum, model_mbuf, uplink, avg_error / len(workers)
 
 
 def fl_test(args, nodes, X_tests, y_tests,

@@ -32,6 +32,7 @@ def argparser():
     parser.add_argument('--residual', type=booltype, required=False)
     parser.add_argument('--error-tol', type=float, required=False)
     parser.add_argument('--num-workers', type=int, required=False)
+    parser.add_argument('--sample', type=float, required=False, default=1.0)
     parser.add_argument('--batch-size', type=int, required=False, default=0)
     parser.add_argument('--test-batch-size', type=int,
                         required=False, default=0)

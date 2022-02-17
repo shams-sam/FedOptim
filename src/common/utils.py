@@ -61,11 +61,16 @@ def get_paths(args, distributed=False):
         folder = args.dataset
     path = {}
 
+    num_workers = 0
+    if args.num_workers:
+        num_workers = args.num_workers
+        if args.sample != 1.0:
+            num_workers = f'{num_workers}_sampled_{args.sample}'
     model_name = 'clf_{}_optim_{}_uniform_{}_non_iid_{}' \
                  '_num_workers_{}_lr_{}_decay_{}_batch_{}'.format(
                      args.clf, args.optim, args.uniform_data,
                      args.non_iid if args.non_iid else 0,
-                     args.num_workers if args.num_workers else 0,
+                     num_workers,
                      args.lr, args.decay, args.batch_size
                  )
     pca_ = args.ncomponent if args.ncomponent else args.pca_var

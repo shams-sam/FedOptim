@@ -45,7 +45,7 @@ for history in histories:
 
     layers_processed = 0
     for layer_num in tqdm(range(len(grads[0]))):
-        
+
         grad_stack = []
         for i, igrad in enumerate(grads):
             prev_v[layer_num] = momentum_grad(

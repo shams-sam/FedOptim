@@ -59,13 +59,13 @@ imagenet(){
 ################################################################################
 # fmnist: done
 ################################################################################
+	# ../ckpts/fmnist/history/clf_fcn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_128.pkl \
+	# ../ckpts/fmnist/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_128.pkl \
+	# ../ckpts/fmnist/history/clf_svm_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_128.pkl \
+	# ../ckpts/fmnist/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_256.pkl \
 fmnist(){
     python process_grads.py --h \
-	../ckpts/fmnist/history/clf_svm_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_128.pkl \
-	../ckpts/fmnist/history/clf_fcn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_128.pkl \
-	../ckpts/fmnist/history/clf_cnn_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_128.pkl \
 	../ckpts/fmnist/history/clf_vgg19_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_256.pkl \
-	../ckpts/fmnist/history/clf_resnet18_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.01_decay_1e-05_batch_256.pkl \
 	--m 0.9 --dry-run $dry
 }
 
@@ -86,10 +86,11 @@ mnist(){
 
 ################################################################################
 # voc: wip
+# image in paper v1 has lr 0.001
 ################################################################################
 voc(){
     python process_grads.py --h \
-	../ckpts/voc/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.001_decay_1e-05_batch_32.pkl \
+	../ckpts/voc/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_32.pkl \
         --m 0.9 --dry-run $dry
 }
 

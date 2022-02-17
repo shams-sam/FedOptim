@@ -64,7 +64,7 @@ python viz/prelim_1.py --h \
     --models FMNIST:FCN FMNIST:CNN FMNIST:ResNet18 FMNIST:VGG19 \
     --loss-type ce ce ce ce \
     --dry-run $dry --final $final \
-    --ylim1 100 100 100 100 \
+    --ylim1 150 150 150 200 \
     --ylim2 1 1 1 1 \
     --save ../ckpts/plots/prelim_1_fmnist_256
 }
@@ -142,7 +142,7 @@ python viz/prelim_1.py --h \
 seg(){
 python viz/prelim_1.py --h \
     ../ckpts/coco/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_512.pkl \
-    ../ckpts/voc/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.001_decay_1e-05_batch_32.pkl \
+    ../ckpts/voc/history/clf_unet_optim_sgd_uniform_True_non_iid_0_num_workers_0_lr_0.0001_decay_1e-05_batch_32.pkl \
     --models COCO:Segmentation PascalVOC:Segmentation \
     --loss-type celoss celoss \
     --dry-run $dry --final $final \

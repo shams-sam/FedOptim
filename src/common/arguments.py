@@ -35,6 +35,7 @@ class Arguments():
         self.cnn_view = cfg.cnn_view[self.dataset]
         self.stratify = args.stratify
         self.num_workers = args.num_workers
+        self.sample = args.sample
         self.uniform_data = args.uniform_data
         self.shuffle_data = args.shuffle_data
         self.non_iid = args.non_iid

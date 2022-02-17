@@ -24,7 +24,7 @@ cifar100(){
 # fmnist: done
 ################################################################################
 fmnist(){
-    python train_centralized.py --device-id 2 1 0 --dataset fmnist --clf vgg19 --paradigm sgd --batch-size 256 --epochs 101 --lr 1e-2 --momentum 0.9 --repeat 1 --dry-run 0 --early-stopping 0
+    python train_centralized.py --device-id 2 1 0 --dataset fmnist --clf vgg19 --paradigm sgd --batch-size 256 --epochs 301 --lr 1e-2 --momentum 0.9 --repeat 1 --dry-run 0 --early-stopping 0 &
 }
 
 
